@@ -1,0 +1,39 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* All Tailwind sizes are rem-based, so this scales the whole UI. 16px looked
+     zoomed-in on laptop screens (~1440px wide); keep 16px only on large monitors. */
+  html {
+    font-size: 14px;
+  }
+  @media (min-width: 1920px) {
+    html {
+      font-size: 16px;
+    }
+  }
+  body {
+    @apply bg-paper text-ink;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-black/10 bg-white p-5;
+  }
+  .badge {
+    @apply inline-block rounded-full px-2 py-0.5 text-xs font-semibold;
+  }
+  .btn {
+    @apply rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-teal text-white hover:bg-teal/90;
+  }
+  .btn-outline {
+    @apply btn border border-black/15 bg-white hover:bg-paper;
+  }
+}

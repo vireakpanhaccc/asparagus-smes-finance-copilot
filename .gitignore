@@ -1,0 +1,35 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.db
+
+# node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# os / editors
+.DS_Store
+.idea/
+.vscode/
+
+# evidence: keep exported logs and reports, ignore raw recordings (link them instead)
+evidence/*.mp4
+evidence/*.mov
+
+# others
+ENTRY.md
+international-topics-rules-en.docx
