@@ -1,7 +1,4 @@
-.PHONY: setup seed reseed api web test lint evidence up
-
-# The owner token from .env (data endpoints require it). Override: make evidence TOKEN=...
-TOKEN ?= demo-owner-token
+.PHONY: setup seed reseed api web test lint up
 
 setup:            ## install backend + frontend deps
 	cd backend && pip install -e ".[dev]"
@@ -25,11 +22,6 @@ test:             ## run backend tests
 lint:
 	cd backend && ruff check .
 	cd frontend && npm run typecheck
-
-evidence:         ## export audit log + test report into evidence/
-	curl -sf -H "X-Owner-Token: $(TOKEN)" http://localhost:8000/api/audit/export.csv -o evidence/audit_log.csv
-	curl -sf -H "X-Owner-Token: $(TOKEN)" http://localhost:8000/api/audit/verify -o evidence/audit_chain_verify.json
-	cd backend && pytest -v > ../evidence/test_report.txt
 
 up:               ## everything in Docker
 	docker compose up --build
