@@ -5,7 +5,7 @@
 ```mermaid
 flowchart LR
   subgraph Browser
-    UI[Next.js UI<br/>Overview · Copilot · Financing · Audit · Connect]
+    UI[Next.js UI<br/>Overview · Financing · My data · Audit · Setup<br/>Copilot chat bot on every page]
   end
   subgraph Backend[FastAPI backend]
     API[REST + SSE API]
@@ -60,7 +60,11 @@ flowchart LR
 
 ## Data model
 
-`Transaction`, `Invoice`, `Bill` (known payables), `PendingAction`, `AuditEntry` (append-only, hash-chained), `ConsentGrant` (read-only bank-link consent), `SandboxOutbox`. Money is stored as integer cents.
+`Transaction`, `Invoice`, `Bill` (known payables), `DataUpload` (one CSV import), `PendingAction`, `AuditEntry` (append-only, hash-chained), `ConsentGrant` (read-only bank-link consent), `SandboxOutbox`. Money is stored as integer cents.
+
+## My data and the bank lock
+
+Each `Transaction`, `Bill` and `Invoice` carries `source` (`bank` | `file` | `manual`), `source_ref` (upload id, or `payment:<action_id>`) and `created_by`. `bank` rows are immutable: `PATCH`/`DELETE` under `/api/data/*` return 403 and write `bank_entry_edit` / `blocked` to the audit log. A mistake in a bank row is corrected by a `manual` row with `corrects_id` pointing at it. A bill the Copilot pays after approval writes a `bank` row, so the payment trail cannot be edited either. Older databases are upgraded at start (`app/db.py`, `_migrate`).
 
 ## Design decisions
 

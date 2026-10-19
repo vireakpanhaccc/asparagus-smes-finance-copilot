@@ -20,7 +20,9 @@ Unknown tools and invalid inputs (Pydantic validation) are blocked and logged.
 
 ## Manual data entry
 
-Owners without a bank link can add transactions, bills and invoices, or upload a CSV (`/api/manual/*`). Every endpoint needs the owner token and is rate-limited. Input is validated: amounts $0.01 to $1,000,000, no future transactions, bills and invoices within a year, names up to 120 characters, notes up to 500. A CSV is limited to 1 MB and 5,000 rows and is imported all or nothing: one bad line rejects the file and names the line. Every entry is written to the audit log as an owner action (`manual_*_added`, `csv_transactions_imported`) and stored with `source` = `manual` or `csv`, so each number's origin is visible. Free text is checked for instruction-like phrases at entry and is wrapped as untrusted data whenever the copilot reads it.
+Owners without a bank link can add transactions, bills and invoices, or upload a CSV (`/api/data/*`). Every endpoint needs the owner token and is rate-limited. Input is validated: amounts $0.01 to $1,000,000, no future transactions, bills and invoices within a year, names up to 120 characters, notes up to 500. A CSV is limited to 1 MB and 5,000 rows and is imported all or nothing: one bad line rejects the file and names the line. Every entry is written to the audit log as an owner action (`manual_entry_added`, `manual_entry_changed`, `manual_entry_deleted`, `csv_imported`) and stored with `source` = `manual` or `file`, so each number's origin is visible. Free text is checked for instruction-like phrases at entry and is wrapped as untrusted data whenever the copilot reads it.
+
+Rows from a bank link (`source` = `bank`), and payments the Copilot made after approval, are locked on the server: a PATCH or DELETE returns 403 and the attempt is written to the audit log as `bank_entry_edit` / `blocked`. The UI hides the buttons, but the server check is what enforces it. A mistake in a bank row is fixed by adding an offsetting entry (`correction_added`) that points at it, so the bank record itself is never rewritten.
 
 ## Rescue plan actions
 

@@ -11,18 +11,33 @@ Scenarios built in (match the UI design):
   - one invoice note that contains a prompt-injection attempt
   - two known December bills (repair + insurance) on top of rent, wages and supplies
   - closing balance of $4,200, with a forecast shortfall in early December
+
+With sample_user_data=True (the demo, not the tests) it also adds what an owner would have
+added: a bank link, one CSV upload (samples/cash_transactions.csv) and three typed entries.
 """
 
 import random
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
+from pathlib import Path
 
 from sqlalchemy import delete
-from sqlmodel import Session, SQLModel
+from sqlmodel import Session
 
 from app.config import settings
-from app.models import AuditEntry, Bill, Invoice, PendingAction, SandboxOutbox, Transaction
+from app.connectors.csv_adapter import CsvAdapter
+from app.models import (
+    AuditEntry,
+    Bill,
+    ConsentGrant,
+    DataUpload,
+    Invoice,
+    PendingAction,
+    SandboxOutbox,
+    Transaction,
+)
 
 SEED = 42
+SAMPLE_CSV = Path(__file__).resolve().parents[2] / "samples" / "cash_transactions.csv"
 DAYS = 182
 CLOSING_BALANCE_CENTS = 420_000
 # Mean daily sales in dollars, Monday..Sunday (Tuesday is the slow day)
@@ -41,7 +56,41 @@ def _tx(acc: str, d: date, cents: int, cp: str, cat: str, memo: str = "") -> Tra
                        amount_cents=cents, counterparty=cp, category=cat, memo=memo)
 
 
-def build(today: date, account_id: str | None = None) -> tuple[list, list[Invoice], list[Bill]]:
+def _owner_tx(acc: str, d: date, cents: int, cp: str, cat: str, memo: str) -> Transaction:
+    tx = _tx(acc, d, cents, cp, cat, memo)
+    tx.source, tx.created_by = "manual", "owner"
+    return tx
+
+
+def _carve_out(bank: list[Transaction], extras: list[Transaction]) -> None:
+    """Take each owner-added row out of a bank row of the same kind.
+
+    Those rows stand for sales and purchases the bank feed did not see. Carving them out of
+    the bank rows keeps the totals per category, so the demo's forecast, KPIs, supplier
+    trend and December shortfall do not change; only who recorded the money does.
+    Sales come out of that day's KHQR settlement; a purchase comes out of the nearest bank
+    purchase in the same category, or that day's market run if there is none.
+    """
+    for e in extras:
+        day = e.booked_at.date()
+        if e.amount_cents > 0:
+            hosts = [t for t in bank if t.counterparty == "KHQR daily settlement"
+                     and t.booked_at.date() == day]
+        else:
+            hosts = [t for t in bank if t.category == e.category and t.amount_cents < 0]
+            if not hosts:
+                hosts = [t for t in bank if t.counterparty == "Central Market"
+                         and t.booked_at.date() == day]
+        hosts = [t for t in hosts if abs(t.amount_cents) > abs(e.amount_cents)]
+        if not hosts:
+            raise ValueError(f"sample row on {day} ({e.category}) does not fit in the bank rows")
+        host = min(hosts, key=lambda t: abs((t.booked_at.date() - day).days))
+        host.amount_cents -= e.amount_cents
+
+
+def build(
+    today: date, account_id: str | None = None, sample_user_data: bool = False
+) -> tuple[list, list[Invoice], list[Bill]]:
     acc = account_id or settings.demo_account_id
     rng = random.Random(SEED)
     start = today - timedelta(days=DAYS)
@@ -67,6 +116,20 @@ def build(today: date, account_id: str | None = None) -> tuple[list, list[Invoic
             txs.append(_tx(acc, d, -round(base * rng.uniform(0.98, 1.02) * 100),
                            "Bean & Dairy Co", "Supplies"))
 
+    if sample_user_data:
+        extras = []
+        if SAMPLE_CSV.exists():
+            extras += CsvAdapter().parse(acc, SAMPLE_CSV.read_text(encoding="utf-8"))
+        extras += [
+            _owner_tx(acc, today, 6_400, "Cash sales", "Sales", "Weekend market stall"),
+            _owner_tx(acc, today - timedelta(days=3), -1_800, "Gas refill", "Utilities",
+                      "Paid in cash"),
+            _owner_tx(acc, today - timedelta(days=4), -1_200, "Ice delivery", "Supplies",
+                      "Weekly order"),
+        ]
+        _carve_out(txs, extras)
+        txs += extras
+
     net = sum(t.amount_cents for t in txs)
     txs.insert(0, _tx(acc, start, CLOSING_BALANCE_CENTS - net, "Opening balance",
                       "Opening balance"))
@@ -84,20 +147,42 @@ def build(today: date, account_id: str | None = None) -> tuple[list, list[Invoic
     ]
     bills = [
         Bill(account_id=acc, payee="Kitchen equipment repair", amount_cents=210_000,
-             due_on=today + timedelta(days=46)),
+             due_on=today + timedelta(days=46), category="Equipment"),
         Bill(account_id=acc, payee="Annual shop insurance", amount_cents=150_000,
-             due_on=today + timedelta(days=49)),
+             due_on=today + timedelta(days=49), category="Insurance"),
     ]
     return txs, invoices, bills
 
 
-def seed(session: Session, today: date | None = None, reset: bool = True) -> None:
+def seed(
+    session: Session,
+    today: date | None = None,
+    reset: bool = True,
+    sample_user_data: bool = False,
+) -> None:
     if reset:
-        for model in (Transaction, Invoice, Bill, PendingAction, SandboxOutbox, AuditEntry):
+        for model in (Transaction, Invoice, Bill, PendingAction, SandboxOutbox, AuditEntry,
+                      DataUpload, ConsentGrant):
             session.execute(delete(model))
         session.commit()
-    txs, invoices, bills = build(today or date.today())
+    today = today or date.today()
+    txs, invoices, bills = build(today, sample_user_data=sample_user_data)
     session.add_all(txs + invoices + bills)
+
+    if sample_user_data:
+        file_rows = [t for t in txs if t.source == "file"]
+        if file_rows:
+            upload = DataUpload(account_id=settings.demo_account_id, filename=SAMPLE_CSV.name,
+                                rows=len(file_rows))
+            session.add(upload)
+            session.flush()
+            for t in file_rows:
+                t.source_ref = str(upload.id)
+        now = datetime.now(timezone.utc)
+        session.add(ConsentGrant(
+            provider="WeBank (mock)", account_id=settings.demo_account_id,
+            expires_at=(now + timedelta(days=90)).isoformat(timespec="seconds"),
+            last_sync_at=now.isoformat(timespec="seconds")))
     session.commit()
 
 
@@ -106,12 +191,13 @@ if __name__ == "__main__":
 
     from sqlmodel import select
 
-    from app.db import engine
+    from app.db import engine, init_db
 
-    SQLModel.metadata.create_all(engine)
+    init_db()  # create tables and migrate older databases, same as the API does on start
     with Session(engine) as s:
         if s.exec(select(Transaction)).first() and "--force" not in sys.argv:
             print("Data already present; keeping it (and the audit log). Use --force to reset.")
         else:
-            seed(s)
-            print("Seeded Sample Café: 6 months of transactions, 3 invoices, 2 upcoming bills.")
+            seed(s, sample_user_data=True)
+            print("Seeded Sample Café: 6 months of bank transactions, a sample CSV upload, "
+                  "3 typed entries, 3 invoices, 2 upcoming bills.")

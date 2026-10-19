@@ -57,17 +57,17 @@ export default function ApprovalCard({ card, onDone }: { card: Card; onDone: (ms
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border-[1.5px] border-warn-accent bg-white p-3">
-      <div className="text-[11px] font-bold uppercase tracking-wider text-warn">{t("approval.title")}</div>
+    <div className="flex flex-col gap-2 rounded-xl border-[1.5px] border-brand-amber/60 bg-white p-3">
+      <div className="text-[11px] font-bold uppercase tracking-wider text-brand-amber">{t("approval.title")}</div>
       <div className="text-[13px] font-semibold leading-snug">{headline}</div>
       {quote && (
-        <blockquote className="border-l-2 border-[#c9c9c4] pl-2.5 text-xs leading-snug text-ink-soft">
+        <blockquote className="border-l-2 border-brand-field pl-2.5 text-xs leading-snug text-brand-sub">
           “{quote}”
         </blockquote>
       )}
-      <details className="text-xs text-muted">
+      <details className="text-xs text-brand-muted">
         <summary className="cursor-pointer select-none">Show exact details</summary>
-        <pre className="mt-2 max-h-48 overflow-auto rounded bg-paper p-2 text-[11px] text-ink">
+        <pre className="mt-2 max-h-48 overflow-auto rounded bg-brand-panel p-2 text-[11px] text-brand-ink">
           {JSON.stringify(card.payload, null, 2)}
         </pre>
         <p className="mt-1">
@@ -84,9 +84,9 @@ export default function ApprovalCard({ card, onDone }: { card: Card; onDone: (ms
           </button>
         </div>
       )}
-      {state === "done" && <p className="text-sm font-semibold text-teal">Approved and run.</p>}
+      {state === "done" && <p className="text-sm font-semibold text-brand-blue">Approved and run.</p>}
       {state === "declined" && <p className="text-sm">Declined. Nothing was sent.</p>}
-      {state === "error" && <p className="text-sm text-danger">Blocked: {error}</p>}
+      {state === "error" && <p className="text-sm text-brand-red700">Blocked: {error}</p>}
     </div>
   );
 }

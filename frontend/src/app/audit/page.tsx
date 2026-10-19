@@ -33,7 +33,7 @@ export default function AuditPage() {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold lg:text-[26px]">{t("audit.title")}</h1>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-1 text-sm text-brand-muted">
             Every action the Copilot took, held or was stopped from taking. Personal data is masked.
           </p>
         </div>
@@ -50,8 +50,8 @@ export default function AuditPage() {
           role="status"
           className={`rounded-xl border px-4 py-3 text-sm ${
             chain.chain_intact
-              ? "border-teal/30 bg-teal-light text-teal-dark"
-              : "border-danger/30 bg-danger-bg text-danger"
+              ? "border-brand-blue/30 bg-brand-blue50 text-brand-blue700"
+              : "border-brand-red200 bg-brand-red50 text-brand-red700"
           }`}
         >
           {chain.chain_intact ? (
@@ -73,7 +73,7 @@ export default function AuditPage() {
             onClick={() => setFilter(f)}
             aria-pressed={filter === f}
             className={`btn min-h-[36px] rounded-full capitalize ${
-              filter === f ? "bg-ink-soft text-white" : "border border-line bg-white"
+              filter === f ? "bg-brand-ink text-white" : "border border-brand-line bg-white"
             }`}
           >
             {f} · {count(f)}
@@ -81,12 +81,12 @@ export default function AuditPage() {
         ))}
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-line bg-white">
+      <div className="overflow-x-auto rounded-xl border border-brand-line bg-white">
         <table className="w-full min-w-[640px] table-fixed text-sm">
           <colgroup>
             <col className="w-40" /><col className="w-28" /><col /><col className="w-36" /><col className="w-28" />
           </colgroup>
-          <thead className="border-b border-line bg-paper text-left text-xs uppercase tracking-wide text-muted">
+          <thead className="border-b border-brand-line bg-brand-panel text-left text-xs uppercase tracking-wide text-brand-muted">
             <tr>
               <th className="p-3">Time (UTC)</th><th className="p-3">Who</th><th className="p-3">Action</th>
               <th className="p-3">Tier</th><th className="p-3">Result</th>
@@ -94,19 +94,19 @@ export default function AuditPage() {
           </thead>
           <tbody>
             {shown.map((e) => (
-              <tr key={e.id} className={`border-b border-side ${["blocked", "ignored"].includes(e.result) ? "bg-danger-bg/60" : ""}`}>
+              <tr key={e.id} className={`border-b border-brand-line2 ${["blocked", "ignored"].includes(e.result) ? "bg-brand-red50/60" : ""}`}>
                 <td className="p-3 font-mono text-xs">{e.ts.replace("T", " ").slice(0, 19)}</td>
                 <td className="p-3">{e.actor}</td>
                 <td className="p-3">
                   <code className="font-mono text-xs">{e.action}</code>
-                  <div className="truncate text-xs text-muted" title={e.detail}>{e.detail}</div>
+                  <div className="truncate text-xs text-brand-muted" title={e.detail}>{e.detail}</div>
                 </td>
                 <td className="p-3"><TierBadge value={e.tier} /></td>
                 <td className="p-3"><TierBadge value={e.result} /></td>
               </tr>
             ))}
             {shown.length === 0 && (
-              <tr><td colSpan={5} className="p-6 text-center text-muted">No entries.</td></tr>
+              <tr><td colSpan={5} className="p-6 text-center text-brand-muted">No entries.</td></tr>
             )}
           </tbody>
         </table>

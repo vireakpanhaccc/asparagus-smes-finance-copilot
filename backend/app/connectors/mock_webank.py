@@ -31,5 +31,6 @@ class MockWeBankAdapter:
                 amount_cents=self._rng.choice([250, 350, 450, 600, 1200]),
                 counterparty="Walk-in customer (KHQR)",
                 category="Sales",
-                source="mock_webank",
+                source="bank",
+                created_by="system",
             )

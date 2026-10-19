@@ -30,13 +30,16 @@ def grant(
 ) -> dict:
     expires = datetime.now(timezone.utc) + timedelta(days=body.days_valid)
     g = ConsentGrant(provider=body.provider, account_id=settings.demo_account_id,
-                     expires_at=expires.isoformat(timespec="seconds"))
+                     expires_at=expires.isoformat(timespec="seconds"),
+                     last_sync_at=utcnow_iso())
     session.add(g)
     session.commit()
     session.refresh(g)
+    granted = g.model_dump()  # before audit.append: its commit expires the instance
     audit.append(session, actor="owner", action="consent_granted", tier="read_only",
-                 result="ok", detail=f"{g.provider}: {g.scope} until {g.expires_at}")
-    return g.model_dump()
+                 result="ok", detail=f"{granted['provider']}: {granted['scope']} "
+                 f"until {granted['expires_at']}")
+    return granted
 
 
 @router.delete("/{grant_id}")

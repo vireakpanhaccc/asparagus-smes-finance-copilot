@@ -3,7 +3,6 @@
   "nav.copilot": "Copilot",
   "nav.financing": "Financing",
   "nav.audit": "Audit log",
-  "nav.connect": "Connect account",
   "sandbox": "Sandbox · sample data",
   "overview.title": "Cash-flow overview",
   "overview.cash": "Cash on hand",
@@ -27,10 +26,14 @@
   "audit.title": "Audit log",
   "audit.export": "Export CSV",
   "audit.verify": "Verify chain",
-  "connect.title": "Connect your account",
-  "connect.scope": "Read-only access to transactions. Cannot move money. Revoke any time.",
   "copilot.greeting": "Hi! I can read your numbers, spot problems early and draft the fix. Anything that sends or moves money waits for your OK.",
   "copilot.steps": "How I got this",
   "copilot.open": "Ask Copilot",
-  "copilot.close": "Close chat"
+  "copilot.close": "Close chat",
+  "nav.data": "My data",
+  "data.title": "My data",
+  "data.tab.transactions": "Transactions",
+  "data.tab.bills": "Bills to pay",
+  "data.tab.invoices": "Invoices to collect",
+  "data.ask": "Ask the Copilot to check it"
 }

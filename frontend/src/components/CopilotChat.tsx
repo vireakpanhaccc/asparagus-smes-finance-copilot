@@ -13,8 +13,8 @@ const SUGGESTIONS = [
   { label: "Why are my costs up?", prompt: "Why are my supplier costs up?" },
 ];
 
-const BOT = "self-start max-w-[88%] rounded-[14px_14px_14px_4px] bg-[#f1f1ee] px-3 py-2.5 text-[13px] leading-snug";
-const USER = "self-end max-w-[80%] rounded-[14px_14px_4px_14px] bg-ink-soft px-3 py-2.5 text-[13px] text-white";
+const BOT = "self-start max-w-[88%] rounded-[14px_14px_14px_4px] bg-brand-panel px-3 py-2.5 text-[13px] leading-snug";
+const USER = "self-end max-w-[80%] rounded-[14px_14px_4px_14px] bg-brand-ink px-3 py-2.5 text-[13px] text-white";
 
 // The conversation itself: header slot, messages, suggestions, input. Used inside the
 // docked bot on Overview and as the full-screen view on /copilot.
@@ -36,11 +36,11 @@ export default function CopilotChat({ greeting, headerAction }: { greeting?: str
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center gap-3 border-b border-line px-4 py-3.5">
-        <div className="h-9 w-9 shrink-0 rounded-full bg-teal" aria-hidden="true" />
+      <div className="flex items-center gap-3 border-b border-brand-line px-4 py-3.5">
+        <div className="h-9 w-9 shrink-0 rounded-full bg-brand-blue" aria-hidden="true" />
         <div className="min-w-0 flex-1">
           <div className="text-[15px] font-semibold">Copilot</div>
-          <div className="text-xs text-muted">{t("copilot.subtitle")}</div>
+          <div className="text-xs text-brand-muted">{t("copilot.subtitle")}</div>
         </div>
         {headerAction}
       </div>
@@ -62,7 +62,7 @@ export default function CopilotChat({ greeting, headerAction }: { greeting?: str
           <div key={i} className="flex flex-col gap-2.5">
             <div
               className={`whitespace-pre-wrap ${
-                m.role === "user" ? USER : m.role === "system" ? `${BOT} !bg-danger-bg` : BOT
+                m.role === "user" ? USER : m.role === "system" ? `${BOT} !bg-brand-red50` : BOT
               }`}
             >
               {m.text}
@@ -74,17 +74,17 @@ export default function CopilotChat({ greeting, headerAction }: { greeting?: str
           </div>
         ))}
 
-        {busy && <p className="text-xs text-muted">Thinking…</p>}
+        {busy && <p className="text-xs text-brand-muted">Thinking…</p>}
 
         {trace.length > 0 && (
-          <details className="text-xs text-muted">
+          <details className="text-xs text-brand-muted">
             <summary className="cursor-pointer select-none">
               {t("copilot.steps")} · {trace.length} step{trace.length === 1 ? "" : "s"}
             </summary>
             <ul className="mt-2 space-y-1.5">
               {trace.map((tr, i) => (
                 <li key={i} className="flex items-center justify-between gap-2">
-                  <code className="font-mono text-[11px] text-ink">{tr.tool}</code>
+                  <code className="font-mono text-[11px] text-brand-ink">{tr.tool}</code>
                   <TierBadge value={tr.status === "needs_approval" ? "held" : tr.tier} />
                 </li>
               ))}
@@ -95,7 +95,7 @@ export default function CopilotChat({ greeting, headerAction }: { greeting?: str
       </div>
 
       <form
-        className="flex gap-2 border-t border-line p-3 pb-5 lg:pb-3"
+        className="flex gap-2 border-t border-brand-line p-3 pb-5 lg:pb-3"
         onSubmit={(e) => {
           e.preventDefault();
           submit(input);
@@ -106,7 +106,7 @@ export default function CopilotChat({ greeting, headerAction }: { greeting?: str
         </label>
         <input
           id="copilot-input"
-          className="h-11 min-w-0 flex-1 rounded-full border border-[#b8b8b3] bg-paper px-3.5 text-[13px]"
+          className="h-11 min-w-0 flex-1 rounded-full border border-brand-field bg-brand-panel px-3.5 text-[13px]"
           placeholder={t("copilot.placeholder")}
           value={input}
           onChange={(e) => setInput(e.target.value)}

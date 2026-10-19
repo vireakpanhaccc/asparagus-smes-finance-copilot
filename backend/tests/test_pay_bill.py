@@ -55,8 +55,10 @@ def test_approved_payment_runs_once_in_sandbox(seeded, clock):
 
     assert result.status == "ok" and result.result["really_sent"] == 0
     assert seeded.get(Bill, bill.id).paid
-    sandbox_payments = select(Transaction).where(Transaction.source == "sandbox_payment")
+    sandbox_payments = select(Transaction).where(Transaction.source_ref.like("payment:%"))
     [payment] = seeded.exec(sandbox_payments).all()
+    # the payment is stored like a bank record: locked, written by the system
+    assert payment.source == "bank" and payment.created_by == "system"
     assert payment.amount_cents == -210_000
     assert [o.kind for o in seeded.exec(select(SandboxOutbox)).all()] == ["bill_payment"]
     assert eng.execute(outcome.pending_action_id, token).status == "blocked"  # single use

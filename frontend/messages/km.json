@@ -1,0 +1,18 @@
+{
+  "nav.overview": "ទិដ្ឋភាពទូទៅ",
+  "nav.financing": "ហិរញ្ញប្បទាន",
+  "nav.data": "ទិន្នន័យរបស់ខ្ញុំ",
+  "nav.audit": "កំណត់ហេតុសវនកម្ម",
+  "sandbox": "ប្រអប់ខ្សាច់ · ទិន្នន័យគំរូ",
+  "overview.title": "ទិដ្ឋភាពលំហូរសាច់ប្រាក់",
+  "copilot.placeholder": "សួរអំពីសាច់ប្រាក់ វិក្កយបត្រ ឬប្រាក់កម្ចី…",
+  "copilot.send": "ផ្ញើ",
+  "approval.title": "ត្រូវការការយល់ព្រមរបស់អ្នក",
+  "approval.approve": "យល់ព្រម និងផ្ញើ",
+  "approval.decline": "មិនមែនឥឡូវនេះ",
+  "data.title": "ទិន្នន័យរបស់ខ្ញុំ",
+  "data.tab.transactions": "ប្រតិបត្តិការ",
+  "data.tab.bills": "វិក្កយបត្រត្រូវបង់",
+  "data.tab.invoices": "វិក្កយបត្រត្រូវប្រមូល",
+  "data.ask": "សុំ Copilot ពិនិត្យ"
+}

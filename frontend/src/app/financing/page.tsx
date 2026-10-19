@@ -11,14 +11,14 @@ const BUFFER_CENTS = 50_000;
 const MONTHS = 2;
 
 const LABEL_STYLE: Record<string, string> = {
-  "Best fit": "bg-teal text-white",
-  "Good fit": "bg-teal-light text-teal",
-  Stretch: "bg-warn-bg text-warn",
+  "Best fit": "bg-brand-blue text-white",
+  "Good fit": "bg-brand-blue50 text-brand-blue",
+  Stretch: "bg-brand-amber50 text-brand-amber",
 };
 const BAR_STYLE: Record<string, string> = {
-  "Best fit": "bg-teal",
-  "Good fit": "bg-teal",
-  Stretch: "bg-warn-accent",
+  "Best fit": "bg-brand-blue",
+  "Good fit": "bg-brand-blue",
+  Stretch: "bg-brand-amber/60",
 };
 
 export default function FinancingPage() {
@@ -41,7 +41,7 @@ export default function FinancingPage() {
       .catch((e: Error) => setError(e.message));
   }, []);
 
-  if (error) return <p className="p-8 text-danger">{error}</p>;
+  if (error) return <p className="p-8 text-brand-red700">{error}</p>;
   if (!ranked) return <p className="p-8">Loading…</p>;
 
   const tryFirst = ranked.options.filter((o) => o.kind === "supplier_terms");
@@ -52,7 +52,7 @@ export default function FinancingPage() {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold lg:text-[26px]">{t("financing.title")}</h1>
-          <p className="mt-1 text-sm text-muted">Ranked for your gap. {ranked.disclaimer}</p>
+          <p className="mt-1 text-sm text-brand-muted">Ranked for your gap. {ranked.disclaimer}</p>
         </div>
         <button className="btn-outline" onClick={() => void send("Explain my financing options and which one fits best.")}>
           Ask the Copilot about these
@@ -70,12 +70,12 @@ export default function FinancingPage() {
       {tryFirst.map((o) => (
         <section
           key={o.product_id}
-          className="flex flex-col gap-3 rounded-xl border border-line bg-paper p-4 sm:flex-row sm:items-center"
+          className="flex flex-col gap-3 rounded-xl border border-brand-line bg-brand-panel p-4 sm:flex-row sm:items-center"
         >
-          <span className="badge self-start bg-ink-soft text-white">Try first</span>
+          <span className="badge self-start bg-brand-ink text-white">Try first</span>
           <div className="flex-1">
             <div className="font-semibold">{o.name}</div>
-            <div className="text-sm text-muted">
+            <div className="text-sm text-brand-muted">
               {[...o.why_it_fits, ...o.watch_out].join(" ") || "Costs nothing, nothing to apply for."}
             </div>
           </div>
@@ -93,11 +93,11 @@ export default function FinancingPage() {
         {loans.map((o) => (
           <article
             key={o.product_id}
-            className={`card flex flex-col gap-3 ${o.label === "Best fit" ? "!border-2 !border-teal" : ""}`}
+            className={`card flex flex-col gap-3 ${o.label === "Best fit" ? "!border-2 !border-brand-blue" : ""}`}
           >
             <div className="flex items-start justify-between gap-2">
               <h2 className="font-semibold">{o.name}</h2>
-              <span className={`badge shrink-0 ${LABEL_STYLE[o.label] ?? "bg-paper text-muted"}`}>{o.label}</span>
+              <span className={`badge shrink-0 ${LABEL_STYLE[o.label] ?? "bg-brand-panel text-brand-muted"}`}>{o.label}</span>
             </div>
             <dl className="grid grid-cols-3 gap-2 text-sm">
               <Stat label="Amount" value={o.amount_cents ? money(o.amount_cents) : "–"} />
@@ -108,20 +108,20 @@ export default function FinancingPage() {
               <p className="text-sm"><b>{t("financing.why")}</b> {o.why_it_fits.join(" ")}</p>
             )}
             {o.watch_out.length > 0 && (
-              <p className="text-sm text-ink-soft"><b>{t("financing.watch")}</b> {o.watch_out.join(" ")}</p>
+              <p className="text-sm text-brand-sub"><b>{t("financing.watch")}</b> {o.watch_out.join(" ")}</p>
             )}
             <div className="mt-auto space-y-1">
               <div
-                className="h-2 overflow-hidden rounded-full bg-side"
+                className="h-2 overflow-hidden rounded-full bg-brand-panel"
                 role="img"
                 aria-label={`Payment is ${o.payment_to_margin_pct}% of monthly margin`}
               >
                 <div
-                  className={`h-full rounded-full ${BAR_STYLE[o.label] ?? "bg-muted"}`}
+                  className={`h-full rounded-full ${BAR_STYLE[o.label] ?? "bg-brand-muted"}`}
                   style={{ width: `${Math.min(100, Math.max(0, o.payment_to_margin_pct))}%` }}
                 />
               </div>
-              <div className="text-xs text-muted">{o.payment_to_margin_pct}% of monthly margin</div>
+              <div className="text-xs text-brand-muted">{o.payment_to_margin_pct}% of monthly margin</div>
             </div>
             <button
               className="btn-primary"
@@ -133,7 +133,7 @@ export default function FinancingPage() {
         ))}
       </section>
 
-      <p className="text-xs text-muted">
+      <p className="text-xs text-brand-muted">
         &ldquo;Prepare application&rdquo; only drafts it. Submitting needs your OK in the chat, and only the
         lender decides approval.
       </p>
@@ -144,9 +144,9 @@ export default function FinancingPage() {
 function Summary({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
     <div className="card">
-      <div className="text-[13px] text-muted">{label}</div>
+      <div className="text-[13px] text-brand-muted">{label}</div>
       <div className="mt-1 font-mono text-2xl font-semibold">{value}</div>
-      <div className="text-xs text-muted">{sub}</div>
+      <div className="text-xs text-brand-muted">{sub}</div>
     </div>
   );
 }
@@ -154,7 +154,7 @@ function Summary({ label, value, sub }: { label: string; value: string; sub: str
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs text-muted">{label}</dt>
+      <dt className="text-xs text-brand-muted">{label}</dt>
       <dd className="font-mono font-semibold">{value}</dd>
     </div>
   );

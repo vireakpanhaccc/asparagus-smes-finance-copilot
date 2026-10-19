@@ -6,6 +6,7 @@ must go through app.security.untrusted before reaching the LLM.
 """
 
 from datetime import date, datetime, timezone
+from enum import Enum
 from uuid import uuid4
 
 from sqlmodel import Field, SQLModel
@@ -13,6 +14,14 @@ from sqlmodel import Field, SQLModel
 
 def utcnow_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+class Source(str, Enum):
+    """Where a data row came from. Stored as plain text; BANK rows are immutable."""
+
+    BANK = "bank"  # from a bank link (or a payment the Copilot made after approval)
+    FILE = "file"  # from a CSV upload
+    MANUAL = "manual"  # typed by the owner
 
 
 class Transaction(SQLModel, table=True):
@@ -24,7 +33,10 @@ class Transaction(SQLModel, table=True):
     counterparty: str
     category: str
     memo: str = ""  # UNTRUSTED
-    source: str = "mock_webank"
+    source: str = Source.BANK.value
+    source_ref: str | None = None  # bank account id, upload id, or payment:<action_id>
+    created_by: str = "system"  # owner | system
+    corrects_id: int | None = None  # set when this row corrects a bank row
 
 
 class Invoice(SQLModel, table=True):
@@ -37,6 +49,9 @@ class Invoice(SQLModel, table=True):
     due_on: date
     paid: bool = False
     note: str = ""  # UNTRUSTED
+    source: str = Source.MANUAL.value
+    source_ref: str | None = None
+    created_by: str = "owner"
 
 
 class Bill(SQLModel, table=True):
@@ -48,6 +63,11 @@ class Bill(SQLModel, table=True):
     amount_cents: int  # positive number; it is paid out
     due_on: date
     paid: bool = False
+    category: str = "Other"
+    note: str = ""  # UNTRUSTED
+    source: str = Source.MANUAL.value
+    source_ref: str | None = None
+    created_by: str = "owner"
 
 
 class PendingAction(SQLModel, table=True):
@@ -87,6 +107,7 @@ class ConsentGrant(SQLModel, table=True):
     granted_at: str = Field(default_factory=utcnow_iso)
     expires_at: str
     revoked_at: str | None = None
+    last_sync_at: str | None = None
 
 
 class SandboxOutbox(SQLModel, table=True):
@@ -98,3 +119,13 @@ class SandboxOutbox(SQLModel, table=True):
     body: str
     pending_action_id: str
     created_at: str = Field(default_factory=utcnow_iso)
+
+
+class DataUpload(SQLModel, table=True):
+    """One CSV import. Its rows carry source="file" and source_ref=str(id)."""
+
+    id: int | None = Field(default=None, primary_key=True)
+    account_id: str = Field(index=True)
+    filename: str
+    rows: int
+    uploaded_at: str = Field(default_factory=utcnow_iso)

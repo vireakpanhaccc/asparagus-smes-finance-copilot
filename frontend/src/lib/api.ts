@@ -168,3 +168,74 @@ export type AuditEntry = {
   result: string;
   detail: string;
 };
+
+// ---- My data (/api/data/*) ------------------------------------------------------------
+
+export type SourceKind = "bank" | "file" | "manual";
+export type SourceCounts = { all: number } & Record<SourceKind, number>;
+
+type RecordBase = {
+  id: number;
+  source: SourceKind;
+  source_ref: string | null;
+  created_by: string;
+  locked: boolean; // bank rows: the server refuses to change them
+};
+
+export type TxRecord = RecordBase & {
+  booked_at: string;
+  amount_cents: number;
+  counterparty: string;
+  category: string;
+  memo: string;
+  corrects_id: number | null;
+};
+
+export type BillRecord = RecordBase & {
+  payee: string;
+  amount_cents: number;
+  due_on: string;
+  category: string;
+  note: string;
+  paid: boolean;
+  days_until_due: number;
+  in_shortfall_week: boolean;
+};
+
+export type InvoiceRecord = RecordBase & {
+  customer: string;
+  customer_contact: string; // always masked by the server
+  amount_cents: number;
+  due_on: string;
+  paid: boolean;
+  note: string;
+  note_flagged: boolean;
+  days_overdue: number;
+};
+
+export type Listing<T> = { rows: T[]; total: number; counts: SourceCounts };
+export type TxListing = Listing<TxRecord> & { next_cursor: string | null };
+
+export type DataSources = {
+  bank: {
+    linked: boolean;
+    grant_id: number | null;
+    provider: string | null;
+    scope: string | null;
+    expires_at: string | null;
+    last_sync_at: string | null;
+    transactions: number;
+  };
+  files: {
+    count: number;
+    transactions: number;
+    latest: { filename: string; uploaded_at: string; rows: number } | null;
+  };
+  manual: { transactions: number; bills: number; invoices: number; total: number };
+  totals: { transactions: number; bills: number; invoices: number };
+  range: { first: string | null; last: string | null };
+  has_data: boolean;
+};
+
+export const apiPatch = <T>(path: string, body: unknown) =>
+  request<T>(path, { method: "PATCH", body: JSON.stringify(body) });

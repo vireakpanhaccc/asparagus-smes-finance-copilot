@@ -28,7 +28,7 @@ See [security-design.md](security-design.md). Enforcement point: `PolicyEngine.c
 | C12 | No data without the owner | `require_owner` on every data, audit and approval endpoint; live stream checks a `?token=` | `test_data_endpoints_refuse_missing_or_wrong_token`, `test_live_stream_refuses_missing_or_wrong_token` | [Pass] |
 | C13 | Money moves only to known bills, for the stored amount | `pay_bill` takes only `bill_id` (extra fields rejected); payee/amount built and re-checked by the server | `test_model_cannot_add_an_account_or_amount`, `test_bill_changed_after_approval_is_blocked`, `test_injected_transfer_instruction_cannot_move_money` | [Pass] |
 | C14 | Plan actions never run by themselves; supplier messages only to known suppliers | rescue plan is read-only, its actions are held; `send_supplier_message` recipient check | `test_agent_builds_plan_and_holds_every_action`, `test_supplier_messages_go_only_to_existing_suppliers` | [Pass] |
-| C15 | Manual entries are owner-only, validated, audited and all-or-nothing for CSV | `/api/manual/*` with `require_owner`, Pydantic limits, audit entries, injection flag at entry | `test_manual_entry_requires_the_owner`, `test_invalid_entries_are_rejected`, `test_bad_csv_imports_nothing_and_says_why`, `test_injected_instructions_in_an_entry_are_flagged` | [Pass] |
+| C15 | Manual entries are owner-only, validated, audited and all-or-nothing for CSV | `/api/data/*` with `require_owner`, Pydantic limits, audit entries, injection flag at entry | `test_manual_entry_requires_the_owner`, `test_invalid_entries_are_rejected`, `test_bad_csv_imports_nothing_and_says_why`, `test_injected_instructions_in_an_entry_are_flagged` | [Pass] |
 
 Attach: `evidence/test_report.txt`.
 

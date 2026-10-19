@@ -14,7 +14,9 @@ from app.models import Transaction
 class CsvAdapter:
     provider_name = "CSV upload"
 
-    def parse(self, account_id: str, content: str) -> list[Transaction]:
+    def parse(
+        self, account_id: str, content: str, source_ref: str | None = None
+    ) -> list[Transaction]:
         rows = []
         for i, row in enumerate(csv.DictReader(io.StringIO(content)), start=2):
             try:
@@ -26,7 +28,9 @@ class CsvAdapter:
                         counterparty=row["counterparty"].strip()[:120],
                         category=(row.get("category") or "Uncategorized").strip()[:60],
                         memo=(row.get("memo") or "")[:500],
-                        source="csv",
+                        source="file",
+                        source_ref=source_ref,
+                        created_by="owner",
                     )
                 )
             except (KeyError, ValueError, TypeError, AttributeError) as err:  # short rows too

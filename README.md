@@ -15,7 +15,7 @@ International Track entry, Shenzhen FinTechathon 2026 · Topic E: SME Finance Co
 | Cash-flow management with alerts | 12-week forecast from transaction history and known bills; flags shortfall weeks                                                                                                  |
 | Financing-option matching        | Rule-based, explainable ranking with total cost, affordability and "why / watch out"                                                                                              |
 | Business financial analysis      | Spending by category, 6-month margin trend, supplier cost change                                                                                                                  |
-| Data without a bank link         | **Manual entry** on the Connect page: add a transaction, bill or invoice, or upload a CSV; validated, audited, and fed straight into the forecast                                 |
+| Data without a bank link         | **My data** page: type a transaction, bill or invoice, or upload a CSV; validated, audited, and fed straight into the forecast. Bank rows are locked on the server; mistakes are fixed with an offsetting correction                                 |
 | All three, as one agentic task   | **Cash-flow rescue plan**: detects the shortfall, tries the cheapest fixes first, re-runs the forecast with them applied (before/after chart) and queues each action for approval |
 
 The owner asks in plain English ("Can I cover rent and payroll in December?"). The agent reads data, forecasts, finds overdue invoices and drafts reminders. Sending them stops at an approval card.
@@ -34,15 +34,24 @@ docker compose up --build
 # UI  http://localhost:3000    API docs  http://localhost:8000/docs
 ```
 
-**Local**
+**Local** (Python 3.11+, Node 20+)
 
 ```bash
 cp .env.example .env
+python3 -m venv backend/.venv && source backend/.venv/bin/activate   # macOS has no `python`, only `python3`
 make setup        # pip + npm install
-make seed         # 6 months of Sample Café data
-make api          # terminal 1
-make web          # terminal 2
+make reseed       # sample data: bank link + 403 bank rows, a sample CSV upload, 3 typed entries (clears the audit log)
+make api          # terminal 1, port 8000
+make web          # terminal 2, port 3000
 ```
+
+Notes for a new machine:
+
+- **Keep the frontend on port 3000.** The API's CORS only allows `http://localhost:3000`; on another port every request fails with "Failed to fetch".
+- Keep the venv activated in every terminal that runs `make api`, `make seed` or `make test`.
+- `make seed` keeps existing data; `make reseed` wipes it and the audit log. An empty database sends the owner to `/setup` (first-time setup) instead of Overview.
+- Older databases are upgraded automatically when the API or the seed script starts (`app/db.py`, `_migrate`).
+- Stop `next dev` before running `npm run build`: both write `.next/` and the dev server will start returning 500s.
 
 ## Tests
 
@@ -65,6 +74,9 @@ The suite runs without an API key; the agent loop uses a scripted fake model. Ke
 | `test_bill_changed_after_approval_is_blocked`                      | A payment runs only for the exact bill the owner approved     |
 | `test_agent_builds_plan_and_holds_every_action`                    | The rescue plan proposes actions; none runs without the owner |
 | `test_bad_csv_imports_nothing_and_says_why`                        | A CSV with one bad line imports nothing and names the line    |
+| `test_bank_row_cannot_be_edited` / `…_deleted`                     | Bank rows are locked on the server (403 + audit `blocked`)    |
+| `test_correction_creates_linked_manual_row`                        | A bank mistake is fixed by an offsetting entry, not a rewrite |
+| `test_demo_seed_adds_user_data_without_changing_the_story`         | The demo seed keeps the December shortfall                    |
 
 ## Repository layout
 
@@ -79,10 +91,26 @@ backend/            FastAPI + agent + security core (Python)
   app/api/            REST + SSE endpoints
   scripts/seed_data.py  deterministic sample data
   tests/              pytest suite
-frontend/           Next.js UI: overview, copilot, financing, audit log, connect
+frontend/           Next.js UI: overview, financing, my data, audit log, first-time setup; the Copilot is a chat bot on every page
 docs/               technical documentation + security self-assessment
 evidence/           exported audit logs, test report, demo video link
 ```
+
+## Working on this project
+
+- **Design spec for My data and Setup:** [docs/handoff-my-data.md](docs/handoff-my-data.md). Where the build differs from it, see "Known gaps" below.
+- **Data sources.** Every transaction, bill and invoice has a `source`: `bank` (synced, or a payment the Copilot made after approval), `file` (CSV upload) or `manual` (typed). `bank` rows can never be edited or deleted: the check is server-side (`_guard` in `backend/app/api/data_records.py`), not just hidden buttons. All of it lives under `/api/data/*`; `/api/connect*` still handles bank-link consent.
+- **Demo seed.** `seed(..., sample_user_data=True)` adds the file and typed rows by carving them out of matching bank rows, so the forecast, KPIs and December shortfall stay the same. Tests use the plain seed.
+- **Colours** are the `brand.*` tokens in `frontend/tailwind.config.ts`; use those, not raw hex.
+- **Checks before a PR:** `cd backend && ruff check . && pytest`, then `cd frontend && npm run typecheck`.
+
+### Known gaps
+
+- `frontend/messages/km.json` (Khmer) exists but nothing loads it yet: there is no language switcher. The Khmer text needs a native speaker's review.
+- No browser tests (Playwright was optional in the handoff and is not set up).
+- The live-sync transaction feed from the old Connect page has no place in the new UI; the backend stream (`/api/connect/live`) still exists.
+- In Docker the demo CSV upload is missing: the backend image only copies `backend/`, so `samples/cash_transactions.csv` is not found and the seed skips it.
+- "Synced n min ago" on the bank card is mock data (`ConsentGrant.last_sync_at`).
 
 ## Submission map
 
@@ -104,7 +132,7 @@ evidence/           exported audit logs, test report, demo video link
 | slowapi, sse-starlette                          | MIT / BSD-3 |
 | httpx                                           | BSD-3       |
 | Next.js, React, Recharts, Tailwind CSS          | MIT         |
-| Inter, IBM Plex Mono (Google Fonts)             | SIL OFL 1.1 |
+| IBM Plex Sans, IBM Plex Mono, Noto Sans Khmer (Google Fonts) | SIL OFL 1.1 |
 
 Model: GLM-4.5-Flash / GLM-4.7-Flash (Zhipu AI) via the Z.ai API free tier, used under Z.ai's terms. Lender names in the app are placeholders.
 

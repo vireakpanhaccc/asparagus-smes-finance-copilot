@@ -163,7 +163,9 @@ def pay_bill(session: Session, args: PayBillInput, *, action_id: str) -> dict:
             amount_cents=-bill.amount_cents,
             counterparty=bill.payee,
             category="Bills",
-            source="sandbox_payment",
+            source="bank",  # locked like a bank record: nobody can edit or delete it
+            source_ref=f"payment:{action_id}",
+            created_by="system",
         )
     )
     session.add(
