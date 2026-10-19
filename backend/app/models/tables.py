@@ -77,7 +77,7 @@ class PendingAction(SQLModel, table=True):
     tool_name: str
     payload_json: str
     payload_hash: str
-    status: str = "pending"  # pending | approved | declined | executed
+    status: str = "pending"  # pending | approved | declined | executed | failed
     created_at: str = Field(default_factory=utcnow_iso)
     approved_at: str | None = None
     executed_at: str | None = None

@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 
-// Colour tokens from my-data-handoff.md: one blue for actions and money in, red for money out
+// Colour tokens: one blue for actions and money in, red for money out
 // and alerts, amber for "needs your OK". Never use the WeBank logo; colours only.
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],

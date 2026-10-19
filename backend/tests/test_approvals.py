@@ -5,9 +5,11 @@ import json
 import pytest
 from sqlmodel import Session, select
 
-from app.models import Invoice, PendingAction, SandboxOutbox
+from app.config import settings
+from app.models import AuditEntry, Bill, Invoice, PendingAction, SandboxOutbox
 from app.policy.approvals import ApprovalError, issue_token
-from app.policy.engine import PolicyEngine
+from app.policy.engine import PolicyEngine, _ref
+from app.security.masking import mask_pii
 
 SECRET = "test-secret"
 
@@ -151,3 +153,33 @@ def test_one_token_used_twice_at_once_runs_once(seeded, clock):
         assert seen_by_second.status == "approved"  # stale, as in a real race
         assert _engine(second, clock).execute(action_id, token).status == "blocked"
     assert len(_outbox(seeded)) == 2
+
+
+def test_audit_follows_one_action_from_held_to_done(seeded, clock):
+    eng = _engine(seeded, clock)
+    outcome = _propose(eng, seeded)
+    eng.execute(outcome.pending_action_id, eng.approve(outcome.pending_action_id,
+                                                       outcome.payload_hash))
+    ref = _ref(outcome.pending_action_id, outcome.payload_hash)
+    trail = [e.result for e in seeded.exec(select(AuditEntry)).all() if ref in e.detail]
+    assert trail == ["held", "approved", "done"]
+
+
+def test_reference_is_never_masked_as_an_account_number():
+    ref = _ref("20261019" + "0" * 24, "123456789012" + "0" * 52)
+    assert "****" not in mask_pii(ref)  # the audit log masks details with this
+
+
+def test_sandbox_off_fails_closed_and_says_why(seeded, clock, monkeypatch):
+    monkeypatch.setattr(settings, "sandbox_mode", False)
+    eng = _engine(seeded, clock)
+    bill = seeded.exec(select(Bill)).first()
+    held = eng.call("pay_bill", {"bill_id": bill.id})
+    token = eng.approve(held.pending_action_id, held.payload_hash)
+    result = eng.execute(held.pending_action_id, token)
+    assert result.status == "error" and "not implemented" in result.reason
+    assert seeded.get(PendingAction, held.pending_action_id).status == "failed"  # not "executed"
+    assert not seeded.get(Bill, bill.id).paid and _outbox(seeded) == []
+    last = seeded.exec(select(AuditEntry).order_by(AuditEntry.id.desc())).first()
+    assert last.result == "error" and "Real sending is not implemented" in last.detail
+    assert eng.execute(held.pending_action_id, token).status == "blocked"  # cannot retry it

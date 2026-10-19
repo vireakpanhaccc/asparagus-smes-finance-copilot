@@ -12,7 +12,7 @@ agent reads it. Contact details are stored in full but only ever returned masked
 
 import csv
 import io
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timedelta
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
@@ -22,11 +22,12 @@ from sqlalchemy import func, or_
 from sqlmodel import Session, select
 
 from app.analytics import forecast
+from app.api.connect import active_grant
 from app.api.deps import require_owner
 from app.config import settings
 from app.connectors.csv_adapter import CsvAdapter
 from app.db import get_session
-from app.models import Bill, ConsentGrant, DataUpload, Invoice, Source, Transaction
+from app.models import Bill, DataUpload, Invoice, Source, Transaction
 from app.rate_limit import limiter
 from app.security import audit
 from app.security.masking import mask_pii
@@ -238,19 +239,9 @@ def _count(session: Session, model, *where) -> int:
                         .where(model.account_id == ACC, *where)).one()
 
 
-def _active_grant(session: Session) -> ConsentGrant | None:
-    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    return session.exec(
-        select(ConsentGrant).where(ConsentGrant.account_id == ACC)
-        .where(ConsentGrant.revoked_at == None)  # noqa: E711
-        .where(ConsentGrant.expires_at > now)
-        .order_by(ConsentGrant.id.desc())
-    ).first()
-
-
 @router.get("/sources")
 def sources(session: Session = Depends(get_session)) -> dict:
-    grant = _active_grant(session)
+    grant = active_grant(session)
     bank_rows = _count(session, Transaction, Transaction.source == Source.BANK)
     file_rows = _count(session, Transaction, Transaction.source == Source.FILE)
     manual = {

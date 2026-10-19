@@ -101,7 +101,6 @@ evidence/           exported audit logs, test report, demo video link
 
 ## Working on this project
 
-- **Design spec for My data and Setup:** [docs/handoff-my-data.md](docs/handoff-my-data.md). Where the build differs from it, see "Known gaps" below.
 - **Data sources.** Every transaction, bill and invoice has a `source`: `bank` (synced, or a payment the Copilot made after approval), `file` (CSV upload) or `manual` (typed). `bank` rows can never be edited or deleted: the check is server-side (`_guard` in `backend/app/api/data_records.py`), not just hidden buttons. All of it lives under `/api/data/*`; `/api/connect*` still handles bank-link consent.
 - **Demo seed.** `seed(..., sample_user_data=True)` adds the file and typed rows by carving them out of matching bank rows, so the forecast, KPIs and December shortfall stay the same. Tests use the plain seed.
 - **Colours** are the `brand.*` tokens in `frontend/tailwind.config.ts`; use those, not raw hex.
@@ -110,7 +109,7 @@ evidence/           exported audit logs, test report, demo video link
 ### Known gaps
 
 - `frontend/messages/km.json` (Khmer) exists but nothing loads it yet: there is no language switcher. The Khmer text needs a native speaker's review.
-- No browser tests (Playwright was optional in the handoff and is not set up).
+- No browser tests: the frontend is checked by type-check and build only.
 - The live-sync transaction feed from the old Connect page has no place in the new UI; the backend stream (`/api/connect/live`) still exists.
 - In Docker the demo CSV upload is missing: the backend image only copies `backend/`, so `samples/cash_transactions.csv` is not found and the seed skips it.
 - "Synced n min ago" on the bank card is mock data (`ConsentGrant.last_sync_at`).

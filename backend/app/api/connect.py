@@ -57,6 +57,18 @@ def revoke(
     return {"status": "revoked"}
 
 
+def active_grant(session: Session) -> ConsentGrant | None:
+    """The consent in force now: not revoked AND not expired. Used by the live stream and
+    My data, so an expired 90-day consent stops syncing as well as a revoked one."""
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return session.exec(
+        select(ConsentGrant).where(ConsentGrant.account_id == settings.demo_account_id)
+        .where(ConsentGrant.revoked_at == None)  # noqa: E711
+        .where(ConsentGrant.expires_at > now)
+        .order_by(ConsentGrant.id.desc())
+    ).first()
+
+
 @router.get("/live")
 async def live_sync(_owner: str = Depends(require_owner_stream)):
     """SSE stream of new transactions while a consent grant is active."""
@@ -65,10 +77,7 @@ async def live_sync(_owner: str = Depends(require_owner_stream)):
     async def events():
         async for tx in adapter.stream_new(settings.demo_account_id):
             with Session(engine) as s:
-                active = s.exec(
-                    select(ConsentGrant).where(ConsentGrant.revoked_at == None)  # noqa: E711
-                ).first()
-                if active is None:
+                if active_grant(s) is None:
                     yield {"event": "stopped", "data": "no active consent"}
                     return
                 s.add(tx)

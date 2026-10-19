@@ -148,7 +148,8 @@ class PolicyEngine:
         )
         self.session.add(pending)
         self.session.commit()
-        self._log(actor, tool_name, spec.tier.value, "held", "Held until the owner decides")
+        self._log(actor, tool_name, spec.tier.value, "held",
+                  f"Held until the owner decides {_ref(pending.id, p_hash)}")
         return ToolOutcome(
             "needs_approval",
             tool_name,
@@ -166,12 +167,13 @@ class PolicyEngine:
             raise ApprovalError(f"action is {pending.status}, not pending")
         if shown_hash != pending.payload_hash:
             self._log(actor, "approval_rejected", "needs_approval", "blocked",
-                      "Approved content does not match the stored action")
+                      "Approved content does not match the stored action "
+                      f"{_ref(action_id, pending.payload_hash)}")
             raise ApprovalError("the action changed since it was shown to you")
         if not self._move(action_id, "pending", "approved", approved_at=utcnow_iso()):
             raise ApprovalError("action is no longer pending")  # another request won the race
         self._log(actor, "approval_recorded", "needs_approval", "approved",
-                  f"Approved {pending.tool_name}")
+                  f"Approved {pending.tool_name} {_ref(action_id, pending.payload_hash)}")
         return issue_token(action_id=action_id, p_hash=pending.payload_hash,
                            secret=self.secret, ttl_seconds=self.ttl, now=self.clock())
 
@@ -182,7 +184,7 @@ class PolicyEngine:
             self.session.add(pending)
             self.session.commit()
             self._log(actor, "approval_declined", "needs_approval", "declined",
-                      f"Declined {pending.tool_name}")
+                      f"Declined {pending.tool_name} {_ref(action_id, pending.payload_hash)}")
 
     def execute(self, action_id: str, token: str | None) -> ToolOutcome:
         pending = self.session.get(PendingAction, action_id)
@@ -191,10 +193,11 @@ class PolicyEngine:
             return ToolOutcome("blocked", "unknown", "needs_approval", reason="no such action")
         spec = REGISTRY[pending.tool_name]
         args = json.loads(pending.payload_json)
+        ref = _ref(action_id, pending.payload_hash)
 
         def blocked(reason: str) -> ToolOutcome:
-            self._log("system", pending.tool_name, spec.tier.value, "blocked", reason)
-            return ToolOutcome("blocked", pending.tool_name, spec.tier.value, reason=reason)
+            self._log("system", spec.name, spec.tier.value, "blocked", f"{reason} {ref}")
+            return ToolOutcome("blocked", spec.name, spec.tier.value, reason=reason)
 
         if pending.status != "approved":
             return blocked(f"No valid approval on record (status: {pending.status})")
@@ -226,10 +229,14 @@ class PolicyEngine:
         try:
             result = spec.handler(self.session, validated, action_id=action_id)
         except Exception as err:  # noqa: BLE001
-            self._log("system", pending.tool_name, spec.tier.value, "error", type(err).__name__)
-            return ToolOutcome("error", pending.tool_name, spec.tier.value, reason=str(err))
-        self._log("system", pending.tool_name, spec.tier.value, "done", _summarize(result))
-        return ToolOutcome("ok", pending.tool_name, spec.tier.value, result=result)
+            # It did not happen: undo anything half-written, record it as failed (not
+            # executed) and say why, e.g. "Real sending is not implemented" with sandbox off.
+            self.session.rollback()
+            self._move(action_id, "executed", "failed")
+            self._log("system", spec.name, spec.tier.value, "error", f"Failed: {err} {ref}")
+            return ToolOutcome("error", spec.name, spec.tier.value, reason=str(err))
+        self._log("system", spec.name, spec.tier.value, "done", f"{_summarize(result)} {ref}")
+        return ToolOutcome("ok", spec.name, spec.tier.value, result=result)
 
     # ---- helpers ------------------------------------------------------------
 
@@ -257,6 +264,15 @@ class PolicyEngine:
     def _log(self, actor: str, action: str, tier: str, result: str, detail: str) -> None:
         audit.append(self.session, actor=actor, action=action, tier=tier, result=result,
                      detail=detail)
+
+
+def _ref(action_id: str, p_hash: str) -> str:
+    """Short action and payload reference for the audit log, so held -> approved -> done
+    of one action can be followed. Grouped in fours: the log masks 8+ digit runs as
+    account numbers, and an all-digit ID must not be masked."""
+    def grouped(s: str) -> str:
+        return "-".join(s[i:i + 4] for i in range(0, len(s), 4))
+    return f"[action {grouped(action_id[:8])} · payload {grouped(p_hash[:12])}]"
 
 
 def _summarize(result: Any) -> str:
