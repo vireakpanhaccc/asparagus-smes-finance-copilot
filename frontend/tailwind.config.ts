@@ -1,19 +1,22 @@
 import type { Config } from "tailwindcss";
 
-// Palette from the SME Finance Copilot design (teal + ink).
+// Palette from the Overview + Copilot wireframe: light neutrals, one teal accent, amber for alerts.
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        ink: { DEFAULT: "#0f2a2e", soft: "#1d3d41" },
-        teal: { DEFAULT: "#0f6b5a", light: "#e8f4f1" },
-        warn: { DEFAULT: "#7a4b00", bg: "#fdf3d8", border: "#ecd48f" },
+        ink: { DEFAULT: "#1f1f1d", soft: "#3d3d39" },
+        teal: { DEFAULT: "#0f6b5a", dark: "#0a4f42", light: "#e8f4f1" },
+        warn: { DEFAULT: "#6a4200", bg: "#fbf4e2", border: "#e3cf97", accent: "#c9a24a" },
         danger: { DEFAULT: "#a12a1d", bg: "#fbe9e6" },
-        paper: "#f4f6f5",
+        paper: "#f6f6f4",
+        side: "#ededea",
+        line: "#d6d6d2",
+        muted: "#6b6b66",
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["IBM Plex Sans", "system-ui", "sans-serif"],
         mono: ["IBM Plex Mono", "ui-monospace", "monospace"],
       },
     },

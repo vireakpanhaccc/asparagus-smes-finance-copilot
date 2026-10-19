@@ -22,25 +22,25 @@ export default function ForecastChart({ weeks }: { weeks: ForecastWeek[] }) {
   const firstShortfall = data.find((d) => d.shortfall);
 
   return (
-    <ResponsiveContainer width="100%" height={260}>
+    <ResponsiveContainer width="100%" height={230}>
       <LineChart data={data} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
-        <CartesianGrid stroke="#e5e7eb" vertical={false} />
+        <CartesianGrid stroke="#d6d6d2" vertical={false} />
         <XAxis dataKey="week" tick={{ fontSize: 12 }} />
         <YAxis tickFormatter={(v: number) => `$${(v / 1000).toFixed(1)}k`} tick={{ fontSize: 12 }} />
         <Tooltip
           formatter={(v) => money(Number(v) * 100)}
           labelFormatter={(l) => `Week of ${l}`}
         />
-        <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="4 4" />
+        <ReferenceLine y={0} stroke="#9a9a94" strokeDasharray="4 4" />
         {firstShortfall && (
           <ReferenceArea
             x1={firstShortfall.week}
             x2={firstShortfall.week}
-            fill="#fdf3d8"
-            stroke="#ecd48f"
+            fill="#f3e6c4"
+            stroke="#e3cf97"
           />
         )}
-        <Line type="monotone" dataKey="balance" stroke="#0f6b5a" strokeWidth={2} dot={false} />
+        <Line type="monotone" dataKey="balance" stroke="#3d3d39" strokeWidth={2.5} dot={false} />
       </LineChart>
     </ResponsiveContainer>
   );

@@ -31,8 +31,8 @@ export default function RescuePlanCard({ plan }: { plan: RescuePlan }) {
   const closes = plan.after.closes_gap;
 
   return (
-    <div className="rounded-xl border-2 border-ink/20 bg-white p-4">
-      <span className="badge bg-ink text-white">Cash rescue plan</span>
+    <div className="rounded-xl border border-line bg-white p-3">
+      <span className="badge bg-ink-soft text-white">Cash rescue plan</span>
 
       <div className="mt-3 grid grid-cols-2 gap-3">
         <Stat
@@ -52,12 +52,12 @@ export default function RescuePlanCard({ plan }: { plan: RescuePlan }) {
       <div className="mt-3">
         <ResponsiveContainer width="100%" height={180}>
           <LineChart data={data} margin={{ top: 5, right: 12, bottom: 0, left: 0 }}>
-            <CartesianGrid stroke="#e5e7eb" vertical={false} />
+            <CartesianGrid stroke="#d6d6d2" vertical={false} />
             <XAxis dataKey="week" tick={{ fontSize: 11 }} />
             <YAxis tickFormatter={(v: number) => `$${(v / 1000).toFixed(1)}k`} tick={{ fontSize: 11 }} />
             <Tooltip formatter={(v) => money(Number(v) * 100)} labelFormatter={(l) => `Week of ${l}`} />
             <Legend wrapperStyle={{ fontSize: 12 }} />
-            <ReferenceLine y={plan.safety_buffer_cents / 100} stroke="#ecd48f" strokeDasharray="4 4" />
+            <ReferenceLine y={plan.safety_buffer_cents / 100} stroke="#e3cf97" strokeDasharray="4 4" />
             <Line name="Now" dataKey="before" stroke="#a12a1d" strokeDasharray="5 4" dot={false} />
             <Line name="With plan" dataKey="after" stroke="#0f6b5a" strokeWidth={2} dot={false} />
           </LineChart>

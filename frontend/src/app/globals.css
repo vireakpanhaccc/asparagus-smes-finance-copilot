@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -16,24 +16,31 @@
     }
   }
   body {
-    @apply bg-paper text-ink;
+    @apply bg-white font-sans text-ink;
+  }
+  a {
+    @apply text-teal hover:text-teal-dark;
   }
 }
 
 @layer components {
   .card {
-    @apply rounded-xl border border-black/10 bg-white p-5;
+    @apply rounded-xl border border-line bg-white p-4;
   }
   .badge {
     @apply inline-block rounded-full px-2 py-0.5 text-xs font-semibold;
   }
+  /* 44px minimum touch target, as in the wireframe */
   .btn {
-    @apply rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50;
+    @apply inline-flex min-h-[44px] items-center justify-center rounded-lg px-4 text-sm font-semibold transition-colors disabled:opacity-50;
   }
   .btn-primary {
-    @apply btn bg-teal text-white hover:bg-teal/90;
+    @apply btn bg-teal text-white hover:bg-teal-dark;
   }
   .btn-outline {
-    @apply btn border border-black/15 bg-white hover:bg-paper;
+    @apply btn border border-line bg-white text-ink hover:bg-paper;
+  }
+  .chip {
+    @apply inline-flex min-h-[32px] items-center rounded-full border border-teal bg-white px-3 text-xs font-medium text-teal hover:bg-teal-light disabled:opacity-50;
   }
 }

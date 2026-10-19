@@ -2,21 +2,20 @@
 
 import Link from "next/link";
 import { useState, type FormEvent, type ReactNode } from "react";
-import { apiPost, apiUpload } from "@/lib/api";
+import { apiPost } from "@/lib/api";
 
 // Manual entry for businesses with no bank link, or for what the link misses
 // (cash sales, upcoming bills, invoices). The server validates and audits every entry.
 
-type Tab = "transaction" | "bill" | "invoice" | "csv";
-type Added = { status: string; summary?: string; rows?: number };
+type Tab = "transaction" | "bill" | "invoice";
+type Added = { status: string; summary?: string };
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "transaction", label: "Transaction" },
   { key: "bill", label: "Bill" },
   { key: "invoice", label: "Invoice" },
-  { key: "csv", label: "Upload CSV" },
 ];
-const INPUT = "w-full rounded-lg border border-black/15 px-3 py-2 text-sm";
+const INPUT = "h-11 w-full rounded-lg border border-line bg-white px-3 text-sm";
 // Local date, not UTC: in UTC+7 a UTC date is still "yesterday" before 7 a.m.
 const today = () => {
   const d = new Date();
@@ -33,7 +32,7 @@ export default function ManualEntryCard() {
     setResult(null);
     try {
       const r = await call();
-      const what = r.rows !== undefined ? `${r.rows} transactions imported` : `Added: ${r.summary}`;
+      const what = `Added: ${r.summary}`;
       setResult({ ok: true, text: `${what}. Your forecast now includes it.` });
       form.reset();
     } catch (e) {
@@ -52,25 +51,14 @@ export default function ManualEntryCard() {
     };
   }
 
-  function upload(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const file = new FormData(form).get("file");
-    if (!(file instanceof File) || !file.name) {
-      setResult({ ok: false, text: "Choose a CSV file first." });
-      return;
-    }
-    run(form, () => apiUpload<Added>("/manual/csv", file));
-  }
-
   const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
   const amount = (f: FormData) => Number(f.get("amount_usd"));
 
   return (
     <div className="card space-y-4">
       <div>
-        <h2 className="font-semibold">Enter data manually</h2>
-        <p className="text-sm text-black/60">
+        <h2 id="manual-entry" className="font-semibold">Or add entries by hand</h2>
+        <p className="text-sm text-muted">
           No bank link, or something it missed? Add it here. Every entry is checked and recorded in
           the audit log.
         </p>
@@ -84,7 +72,7 @@ export default function ManualEntryCard() {
               setTab(t.key);
               setResult(null);
             }}
-            className={`btn rounded-full ${tab === t.key ? "bg-ink text-white" : "border border-black/15 bg-white"}`}
+            className={`btn rounded-full ${tab === t.key ? "bg-ink-soft text-white" : "border border-line bg-white"}`}
           >
             {t.label}
           </button>
@@ -180,22 +168,6 @@ export default function ManualEntryCard() {
         </form>
       )}
 
-      {tab === "csv" && (
-        <form className="space-y-3" onSubmit={upload}>
-          <div className="rounded-lg bg-paper p-3 text-sm">
-            <p>
-              Columns: <code className="font-mono">date, amount, counterparty, category, memo</code>.
-              Amounts in dollars: positive = money in, negative = money out. Up to 5,000 rows, 1 MB.
-            </p>
-            <pre className="mt-2 font-mono text-xs text-black/70">
-              {"date,amount,counterparty,category,memo\n2026-10-15,320.00,Cash sales,Sales,\n2026-10-16,-95.50,Central Market,Ingredients,"}
-            </pre>
-            <p className="mt-2 text-black/60">If any line is invalid, nothing is imported and the line is named.</p>
-          </div>
-          <input name="file" type="file" accept=".csv,text/csv" className="block text-sm" />
-          <Submit busy={busy} label="Upload and import" />
-        </form>
-      )}
 
       {result && (
         <p className={`text-sm ${result.ok ? "text-teal" : "text-danger"}`}>
@@ -214,7 +186,7 @@ export default function ManualEntryCard() {
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="space-y-1 text-sm">
-      <span className="text-black/60">{label}</span>
+      <span className="text-muted">{label}</span>
       {children}
     </label>
   );
