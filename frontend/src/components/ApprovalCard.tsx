@@ -10,17 +10,24 @@ function describe(tool: string, p: Record<string, unknown>): { headline: string;
   const quote = typeof p.message === "string" ? p.message : undefined;
   switch (tool) {
     case "send_payment_reminders": {
-      const n = Array.isArray(p.invoice_ids) ? p.invoice_ids.length : 0;
-      return { headline: `Send ${n} payment reminder${n === 1 ? "" : "s"}`, quote };
+      // Recipients are built by the server from the stored invoices, not by the model.
+      const to = Array.isArray(p.recipients)
+        ? (p.recipients as { customer?: string; amount?: string }[])
+            .map((r) => `${r.customer ?? "?"} (${r.amount ?? "?"})`)
+            .join(", ")
+        : "";
+      return { headline: `Send payment reminders to ${to || "your customers"}`, quote };
     }
     case "send_supplier_message":
       return { headline: `Send a message to ${String(p.supplier ?? "your supplier")}`, quote };
     case "submit_loan_application":
       return {
-        headline: `Submit a loan application for $${Number(p.amount_usd ?? 0).toLocaleString("en-US")} over ${String(p.term_months ?? "?")} months`,
+        headline: `Apply for ${String(p.amount ?? "?")} from ${String(p.lender_product ?? "a lender")} over ${String(p.term_months ?? "?")} months: total cost ${String(p.total_cost ?? "?")}, monthly payment ${String(p.monthly_payment ?? "?")}`,
       };
     case "pay_bill":
-      return { headline: `Pay bill #${String(p.bill_id ?? "?")}` };
+      return {
+        headline: `Pay ${String(p.amount ?? "?")} to ${String(p.payee ?? `bill #${String(p.bill_id ?? "?")}`)}, due ${String(p.due_on ?? "?")}`,
+      };
     default:
       return { headline: tool.replace(/_/g, " "), quote };
   }

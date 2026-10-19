@@ -2,9 +2,10 @@
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-// Demo-only owner token. Known risk (security report): a real product would use a
-// session cookie from proper login, never a token shipped to the browser.
-const OWNER_TOKEN = process.env.NEXT_PUBLIC_OWNER_TOKEN ?? "demo-owner-token";
+// Demo-only owner token, from frontend/.env.local (same value as OWNER_DEMO_TOKEN in .env).
+// No fallback: without it every request is refused. Known risk (security report): a real
+// product would use a session cookie from proper login, never a token shipped to the browser.
+const OWNER_TOKEN = process.env.NEXT_PUBLIC_OWNER_TOKEN ?? "";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}/api${path}`, {

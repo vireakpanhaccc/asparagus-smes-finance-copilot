@@ -1,9 +1,12 @@
 """Every endpoint that returns business data, logs or pending actions needs the owner."""
 
+from unittest.mock import patch
+
 import pytest
 from fastapi.testclient import TestClient
 
-from app.config import settings
+from app import main as main_module
+from app.config import Settings, settings
 from app.db import get_session
 from app.main import app
 
@@ -46,3 +49,28 @@ def test_live_stream_refuses_missing_or_wrong_token(client):
 def test_health_check_stays_public_and_leaks_nothing(client):
     r = client.get("/health")
     assert r.status_code == 200 and set(r.json()) == {"status", "sandbox"}
+
+
+@pytest.mark.parametrize("secret, token", [
+    ("", ""),
+    ("change-me", "demo-owner-token"),
+    ("change-me-in-dotenv", "x" * 20),
+    ("too-short", "short"),
+])
+def test_default_or_weak_secrets_are_refused(secret, token):
+    weak = Settings(_env_file=None, approval_secret=secret, owner_demo_token=token)
+    assert weak.insecure_settings()
+    with pytest.raises(RuntimeError, match="Refusing to start"):
+        with patch.object(main_module, "settings", weak), TestClient(app):
+            pass
+
+
+def test_strong_secrets_are_accepted():
+    strong = Settings(_env_file=None, approval_secret="a" * 64, owner_demo_token="b" * 32)
+    assert strong.insecure_settings() == []
+
+
+def test_unset_owner_token_refuses_everyone(client, monkeypatch):
+    monkeypatch.setattr(settings, "owner_demo_token", "")
+    assert client.get("/api/audit").status_code == 401
+    assert client.get("/api/audit", headers={"X-Owner-Token": ""}).status_code == 401

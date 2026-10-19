@@ -21,10 +21,10 @@ class Settings(BaseSettings):
     llm_timeout_seconds: float = 30
     agent_max_steps: int = 8
 
-    # Security
-    approval_secret: str = "change-me-in-dotenv"
+    # Security. No defaults: the API refuses to start until both are set (see insecure_settings).
+    approval_secret: str = ""
     approval_ttl_seconds: int = 600
-    owner_demo_token: str = "demo-owner-token"  # replace with real auth after the competition
+    owner_demo_token: str = ""  # replace with real auth after the competition
     sandbox_mode: bool = True  # never turn off for the competition
 
     # Demo
@@ -38,6 +38,23 @@ class Settings(BaseSettings):
     @property
     def llm_extra_body_dict(self) -> dict:
         return json.loads(self.llm_extra_body) if self.llm_extra_body.strip() else {}
+
+    def insecure_settings(self) -> list[str]:
+        """Secrets that are missing, too short or a published default. Empty list = OK."""
+        problems = []
+        for name, value, min_len in (("APPROVAL_SECRET", self.approval_secret, 32),
+                                     ("OWNER_DEMO_TOKEN", self.owner_demo_token, 16)):
+            if not value:
+                problems.append(f"{name} is not set")
+            elif value in KNOWN_DEFAULTS:
+                problems.append(f"{name} is a published default")
+            elif len(value) < min_len:
+                problems.append(f"{name} is shorter than {min_len} characters")
+        return problems
+
+
+# Values that have appeared in this repository; anyone can read them.
+KNOWN_DEFAULTS = {"change-me", "change-me-in-dotenv", "demo-owner-token"}
 
 
 settings = Settings()

@@ -72,6 +72,56 @@ def _evaluate(p: Product, gap: int, months: int, overdue_total: int) -> dict | N
     return {"amount_cents": amount, "total_cost_cents": cost, "monthly_payment_cents": payment}
 
 
+ADVANCE_RATE = 0.8  # an invoice advance pays out 80% of the overdue invoices
+
+
+def _usd(cents: int) -> str:
+    return f"${cents / 100:,.2f}"
+
+
+def quote(
+    session: Session, account_id: str, product_id: str, amount_cents: int, term_months: int,
+    years_in_business: float = 3.0, today: date | None = None,
+) -> dict:
+    """Exact terms for one application, from the catalogue, never from the model.
+
+    Raises ValueError when the product does not exist, is not a loan, or the amount or
+    term is outside what the product allows. The result is what the owner approves.
+    """
+    p = next((p for p in MOCK_PRODUCTS if p.id == product_id), None)
+    if p is None:
+        raise ValueError(f"No such financing product: {product_id}")
+    if p.kind == "supplier_terms":
+        raise ValueError("Supplier terms are not a loan: there is nothing to apply for")
+    if years_in_business < p.min_years_in_business:
+        raise ValueError(f"{p.name} needs {p.min_years_in_business:g}+ years in business")
+
+    if p.kind == "invoice_advance":
+        overdue = sum(i.amount_cents for i in
+                      invoices.find_overdue(session, account_id, today or date.today()))
+        limit = int(overdue * ADVANCE_RATE)
+        payment, cost = 0, round(amount_cents / ADVANCE_RATE * p.flat_fee_pct)
+    else:
+        limit = p.max_cents
+        if p.term_months and term_months != p.term_months:
+            raise ValueError(f"{p.name} has a fixed term of {p.term_months} months")
+        if not 1 <= term_months <= 36:
+            raise ValueError("The term must be 1 to 36 months")
+        payment, cost = _amortized(amount_cents, p.apr, term_months)
+    if amount_cents > limit:
+        raise ValueError(f"{p.name} can lend at most {_usd(limit)}")
+
+    return {
+        "lender_product": p.name,
+        "amount": _usd(amount_cents),
+        "term_months": term_months,
+        "monthly_payment": _usd(payment) if payment else "none (repaid when customers pay)",
+        "total_cost": _usd(cost),
+        "total_cost_cents": cost,
+        "note": "Illustrative mock terms. Only the lender decides approval.",
+    }
+
+
 def rank_options(
     session: Session, account_id: str, gap_cents: int, months_needed: int,
     years_in_business: float = 3.0, today: date | None = None,

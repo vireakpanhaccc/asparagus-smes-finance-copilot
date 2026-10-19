@@ -1,9 +1,12 @@
 """SUGGEST tools: produce drafts. Nothing leaves the app."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlmodel import Session
 
+from app.analytics import financing
+from app.config import settings
 from app.models import Invoice
+from app.security.untrusted import unwrap_untrusted
 from app.tools.registry import Tier, tool
 
 
@@ -50,13 +53,17 @@ class DraftLoanInput(BaseModel):
     input_model=DraftLoanInput,
 )
 def draft_loan_application(session: Session, args: DraftLoanInput) -> dict:
-    # TODO(backend): fill from business_summary() - revenue, margin, time in business.
-    return {"draft": args.model_dump(), "submitted": False}
+    # Same terms the owner would approve on submit, so the draft shows the total cost too.
+    terms = financing.quote(session, settings.demo_account_id, args.product_id,
+                            round(args.amount_usd * 100), args.term_months)
+    return {"draft": {**args.model_dump(), **terms}, "submitted": False}
 
 
 class DraftSupplierInput(BaseModel):
-    supplier: str
+    supplier: str = Field(max_length=200)
     request: str = Field(default="30-day payment terms", max_length=200)
+
+    _plain = field_validator("supplier")(unwrap_untrusted)  # see SendSupplierInput
 
 
 @tool(

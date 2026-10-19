@@ -1,7 +1,8 @@
 """Untrusted-text handling (prompt-injection defence, layer 1 of 2).
 
-Free text from customers, suppliers or bank memos is DATA, never instructions.
-Before it reaches the LLM it is:
+Free text from customers, suppliers or bank memos is DATA, never instructions. So are
+names (counterparty, customer, payee, supplier, category): anyone who can add a row
+controls them. Before it reaches the LLM it is:
   1. scanned for instruction-like patterns (flagged + logged if found),
   2. escaped so it cannot close the wrapper tag,
   3. wrapped in <untrusted_data source="..."> tags the system prompt tells the model to
@@ -13,6 +14,7 @@ known risk in the security report.
 """
 
 import re
+from typing import Any
 
 from sqlmodel import Session
 
@@ -56,6 +58,57 @@ def scan_and_wrap(session: Session, source: str, text: str) -> str:
             detail="Instruction-like text found in data. Treated as data, not followed.",
         )
     return wrap_untrusted(source, text)
+
+
+# Names typed by the owner, synced from a bank or uploaded in a CSV. Anyone who can add a
+# row (or a bank-feed counterparty) controls them, so they are untrusted like notes.
+NAME_FIELDS = {"counterparty", "customer", "payee", "supplier", "category"}
+_WRAPPED = re.compile(r'<untrusted_data source="[^"]*">(.*?)</untrusted_data>', re.S)
+
+
+def _unescape(text: str) -> str:
+    return text.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
+
+
+def unwrap_untrusted(text: str) -> str:
+    """Remove wrapper tags, e.g. when the model copies a wrapped name into a tool argument."""
+    return _WRAPPED.sub(lambda m: _unescape(m.group(1)), text)
+
+
+def wrap_names(value: Any) -> Any:
+    """Wrap every name field, at any depth, before a tool result reaches the model.
+
+    `next_actions` is left as is: it holds exact tool arguments the model must copy
+    (the actions are held for the owner anyway, and their text is still scanned).
+    """
+    if isinstance(value, list):
+        return [wrap_names(v) for v in value]
+    if not isinstance(value, dict):
+        return value
+    out: dict[str, Any] = {}
+    for key, v in value.items():
+        if key == "next_actions":
+            out[key] = v
+        elif key in NAME_FIELDS and isinstance(v, str) and v and not _WRAPPED.fullmatch(v):
+            out[key] = wrap_untrusted(key, v)
+        else:
+            out[key] = wrap_names(v)
+    return out
+
+
+def contains_instructions(value: Any) -> bool:
+    """True if any string (or dict key) in a tool result looks like an injection attempt.
+
+    Text a tool already wrapped was scanned (and logged) by that tool, so it is skipped.
+    """
+    if isinstance(value, str):
+        return not _WRAPPED.fullmatch(value) and looks_like_instructions(value)
+    if isinstance(value, list):
+        return any(contains_instructions(v) for v in value)
+    if isinstance(value, dict):
+        return any(contains_instructions(k) or contains_instructions(v)
+                   for k, v in value.items())
+    return False
 
 
 def untrusted_fields(session: Session, source: str, field: str, text: str) -> dict[str, str]:

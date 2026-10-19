@@ -5,16 +5,20 @@ payload-bound approval token is checked. In sandbox mode they write to the
 SandboxOutbox table and nothing leaves the system.
 """
 
+import hashlib
 import json
 from datetime import datetime, timezone
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlmodel import Session, select
 
+from app.analytics import financing
 from app.analytics.analysis import SUPPLIER_CATEGORY
 from app.config import settings
 from app.models import Bill, Invoice, SandboxOutbox, Transaction
 from app.security.masking import mask_pii
+from app.security.outbound import check_outbound
+from app.security.untrusted import unwrap_untrusted
 from app.tools.registry import Tier, tool
 
 
@@ -28,11 +32,39 @@ class SendRemindersInput(BaseModel):
     message: str = Field(min_length=1, max_length=1000)
 
 
+def _reminders(session: Session, args: SendRemindersInput) -> dict:
+    """Who gets the reminder, built from the stored invoices, never from the model.
+
+    The owner's card shows each customer, amount and masked contact. A fingerprint of the
+    full contact is part of the approved payload, so a contact edited after approval
+    blocks the send (the payload is rebuilt and compared at execution).
+    """
+    check_outbound(args.message)
+    invoice_ids = list(dict.fromkeys(args.invoice_ids))  # drop duplicates, keep order
+    recipients = []
+    for inv_id in invoice_ids:
+        inv = session.get(Invoice, inv_id)
+        if inv is None or inv.account_id != settings.demo_account_id or inv.paid:
+            raise ValueError(f"No such unpaid invoice: #{inv_id}")
+        recipients.append({
+            "invoice_id": inv.id,
+            "customer": inv.customer,
+            "amount": f"${inv.amount_cents / 100:,.2f}",
+            "contact": mask_pii(inv.customer_contact),
+            "contact_fingerprint": hashlib.sha256(
+                inv.customer_contact.encode("utf-8")).hexdigest()[:12],
+        })
+    return {"invoice_ids": invoice_ids, "message": args.message, "recipients": recipients}
+
+
 @tool(
     name="send_payment_reminders",
-    description="Send payment reminders to customers. Requires the owner's approval.",
+    description="Send payment reminders to customers with unpaid invoices. Requires the "
+    "owner's approval. The message may not contain links, contact details or account "
+    "numbers.",
     tier=Tier.NEEDS_APPROVAL,
     input_model=SendRemindersInput,
+    prepare=_reminders,
 )
 def send_payment_reminders(session: Session, args: SendRemindersInput, *, action_id: str) -> dict:
     _require_sandbox()
@@ -55,24 +87,37 @@ def send_payment_reminders(session: Session, args: SendRemindersInput, *, action
 
 
 class SubmitLoanInput(BaseModel):
-    product_id: str
+    product_id: str = Field(max_length=60)
     amount_usd: float = Field(gt=0, le=1_000_000, description="In dollars")
     term_months: int = Field(ge=1, le=60)
 
 
+def _loan_terms(session: Session, args: SubmitLoanInput) -> dict:
+    """The application the owner approves: lender, amount, term, monthly payment and
+    total cost, all computed from the product catalogue. Unknown products and amounts or
+    terms the product does not allow are refused."""
+    terms = financing.quote(session, settings.demo_account_id, args.product_id,
+                            round(args.amount_usd * 100), args.term_months)
+    return {**args.model_dump(), **terms}
+
+
 @tool(
     name="submit_loan_application",
-    description="Submit a loan application to a lender. Requires the owner's approval.",
+    description="Submit a loan application for a product from rank_financing. Requires the "
+    "owner's approval. The server computes the terms; the product must allow the amount "
+    "and term.",
     tier=Tier.NEEDS_APPROVAL,
     input_model=SubmitLoanInput,
+    prepare=_loan_terms,
 )
 def submit_loan_application(session: Session, args: SubmitLoanInput, *, action_id: str) -> dict:
     _require_sandbox()
+    terms = _loan_terms(session, args)
     session.add(
         SandboxOutbox(
             kind="loan_application",
-            recipient_masked=args.product_id,
-            body=args.model_dump_json(),
+            recipient_masked=terms["lender_product"],
+            body=json.dumps(terms),
             pending_action_id=action_id,
         )
     )
@@ -81,8 +126,11 @@ def submit_loan_application(session: Session, args: SubmitLoanInput, *, action_i
 
 
 class SendSupplierInput(BaseModel):
-    supplier: str = Field(max_length=120)
+    supplier: str = Field(max_length=200)
     message: str = Field(min_length=1, max_length=1000)
+
+    # Tool results wrap names as untrusted; the model may copy the wrapped form.
+    _plain = field_validator("supplier")(unwrap_untrusted)
 
 
 def _supplier_message(session: Session, args: SendSupplierInput) -> dict:
@@ -95,13 +143,15 @@ def _supplier_message(session: Session, args: SendSupplierInput) -> dict:
     ).all()
     if args.supplier not in known:
         raise ValueError("Unknown supplier: messages go only to existing suppliers")
+    check_outbound(args.message)
     return {"supplier": args.supplier, "message": args.message}
 
 
 @tool(
     name="send_supplier_message",
     description="Send a message to one of the business's existing suppliers (for example "
-    "asking for longer payment terms). Requires the owner's approval.",
+    "asking for longer payment terms). Requires the owner's approval. The message may not "
+    "contain links, contact details or account numbers.",
     tier=Tier.NEEDS_APPROVAL,
     input_model=SendSupplierInput,
     prepare=_supplier_message,

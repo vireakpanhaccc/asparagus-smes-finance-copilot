@@ -29,7 +29,7 @@ Every tool has a permission tier set in code: **read-only**, **suggest** or **ne
 **Docker (recommended)**
 
 ```bash
-cp .env.example .env          # add LLM_API_KEY (free Z.ai key) and a random APPROVAL_SECRET
+cp .env.example .env          # add LLM_API_KEY (free Z.ai key), APPROVAL_SECRET and OWNER_DEMO_TOKEN
 docker compose up --build
 # UI  http://localhost:3000    API docs  http://localhost:8000/docs
 ```
@@ -37,7 +37,8 @@ docker compose up --build
 **Local** (Python 3.11+, Node 20+)
 
 ```bash
-cp .env.example .env
+cp .env.example .env              # fill in LLM_API_KEY, APPROVAL_SECRET, OWNER_DEMO_TOKEN
+echo "NEXT_PUBLIC_OWNER_TOKEN=<same value as OWNER_DEMO_TOKEN>" > frontend/.env.local
 python3 -m venv backend/.venv && source backend/.venv/bin/activate   # macOS has no `python`, only `python3`
 make setup        # pip + npm install
 make reseed       # sample data: bank link + 403 bank rows, a sample CSV upload, 3 typed entries (clears the audit log)
@@ -46,6 +47,8 @@ make web          # terminal 2, port 3000
 ```
 
 Notes for a new machine:
+
+- **Secrets have no defaults.** The API refuses to start until `APPROVAL_SECRET` (32+ characters) and `OWNER_DEMO_TOKEN` (16+) are set. Generate each with `python3 -c "import secrets; print(secrets.token_hex(32))"`.
 
 - **Keep the frontend on port 3000.** The API's CORS only allows `http://localhost:3000`; on another port every request fails with "Failed to fetch".
 - Keep the venv activated in every terminal that runs `make api`, `make seed` or `make test`.

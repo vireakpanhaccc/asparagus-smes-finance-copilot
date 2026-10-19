@@ -28,7 +28,7 @@ services:
       context: ./frontend
       args:
         NEXT_PUBLIC_API_URL: http://localhost:8000
-        NEXT_PUBLIC_OWNER_TOKEN: ${OWNER_DEMO_TOKEN:-demo-owner-token}
+        NEXT_PUBLIC_OWNER_TOKEN: ${OWNER_DEMO_TOKEN:?Set OWNER_DEMO_TOKEN in .env}
     ports:
       - "3000:3000"
     depends_on:

@@ -11,7 +11,10 @@ def require_owner(x_owner_token: str = Header(default="")) -> str:
     Known risk (security report): single-user demo auth. Production would use real
     identity verification (OAuth/OIDC + MFA) and per-user sessions.
     """
-    if not hmac.compare_digest(x_owner_token, settings.owner_demo_token):
+    # An unset token must never match an empty header: fail closed.
+    if not settings.owner_demo_token or not hmac.compare_digest(
+        x_owner_token, settings.owner_demo_token
+    ):
         raise HTTPException(status_code=401, detail="owner authentication required")
     return "owner"
 

@@ -126,3 +126,10 @@ def test_forecast_tool_always_covers_12_weeks(seeded):
     for got, want in zip(weeks, expected, strict=True):
         assert got["bills_total_usd"] == in_dollars(want)["bills_total_usd"]
     assert any(w["bills_total_usd"] == "-$5,800.00" for w in weeks)  # the December cluster
+
+
+def test_reply_never_shows_wrapper_tags(seeded):
+    provider = FakeProvider([[{"type": "text", "text":
+        'You owe <untrusted_data source="payee">Bean &amp; Dairy Co</untrusted_data> $90.'}]])
+    result = run_agent(seeded, provider, [{"role": "user", "content": "Who do I owe?"}])
+    assert result.text == "You owe Bean & Dairy Co $90."

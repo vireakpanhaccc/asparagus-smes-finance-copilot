@@ -14,6 +14,12 @@ from app.rate_limit import limiter
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    problems = settings.insecure_settings()
+    if problems:
+        raise RuntimeError(
+            "Refusing to start: " + "; ".join(problems) + ". Set them in .env; generate "
+            "with: python3 -c \"import secrets; print(secrets.token_hex(32))\""
+        )
     init_db()
     yield
 

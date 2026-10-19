@@ -19,13 +19,14 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from pydantic import ValidationError
-from sqlmodel import Session
+from sqlmodel import Session, update
 
 from app.config import settings
 from app.models import PendingAction
 from app.models.tables import utcnow_iso
 from app.policy.approvals import ApprovalError, issue_token, payload_hash, verify_token
 from app.security import audit
+from app.security.untrusted import INJECTION_WARNING, contains_instructions, wrap_names
 from app.tools.registry import REGISTRY, Tier
 
 Status = Literal["ok", "needs_approval", "blocked", "error", "declined"]
@@ -41,12 +42,15 @@ class ToolOutcome:
     pending_action_id: str | None = None
     payload: dict[str, Any] = field(default_factory=dict)
     payload_hash: str | None = None
+    flagged: bool = False  # the result holds instruction-like text (already logged)
 
     def for_llm(self) -> dict[str, Any]:
-        """What the model is allowed to see. No tokens, ever."""
+        """What the model is allowed to see. No tokens, ever; names wrapped as untrusted."""
         out: dict[str, Any] = {"status": self.status}
         if self.status == "ok":
-            out["result"] = in_dollars(self.result)
+            out["result"] = wrap_names(in_dollars(self.result))
+            if self.flagged:
+                out["warning"] = INJECTION_WARNING
         elif self.status == "needs_approval":
             out["message"] = (
                 "Held for the owner's approval. An approval card is shown to the owner. "
@@ -97,6 +101,8 @@ class PolicyEngine:
     ) -> None:
         self.session = session
         self.secret = secret or settings.approval_secret
+        if not self.secret:  # an empty HMAC key would make every token forgeable
+            raise RuntimeError("APPROVAL_SECRET is not set")
         self.ttl = ttl_seconds or settings.approval_ttl_seconds
         self.clock = clock
 
@@ -121,7 +127,12 @@ class PolicyEngine:
                 self._log(actor, tool_name, spec.tier.value, "error", type(err).__name__)
                 return ToolOutcome("error", tool_name, spec.tier.value, reason=str(err))
             self._log(actor, tool_name, spec.tier.value, "ok", _summarize(result))
-            return ToolOutcome("ok", tool_name, spec.tier.value, result=result)
+            flagged = contains_instructions(result)
+            if flagged:
+                self._log("untrusted_data", "untrusted_text_detected", "read_only", "ignored",
+                          f"Instruction-like text in {tool_name} output. Treated as data, "
+                          "not followed.")
+            return ToolOutcome("ok", tool_name, spec.tier.value, result=result, flagged=flagged)
 
         # NEEDS_APPROVAL: hold, never run here
         clean_args = validated.model_dump(mode="json")
@@ -157,10 +168,8 @@ class PolicyEngine:
             self._log(actor, "approval_rejected", "needs_approval", "blocked",
                       "Approved content does not match the stored action")
             raise ApprovalError("the action changed since it was shown to you")
-        pending.status = "approved"
-        pending.approved_at = utcnow_iso()
-        self.session.add(pending)
-        self.session.commit()
+        if not self._move(action_id, "pending", "approved", approved_at=utcnow_iso()):
+            raise ApprovalError("action is no longer pending")  # another request won the race
         self._log(actor, "approval_recorded", "needs_approval", "approved",
                   f"Approved {pending.tool_name}")
         return issue_token(action_id=action_id, p_hash=pending.payload_hash,
@@ -211,10 +220,8 @@ class PolicyEngine:
                 return blocked("the record changed after approval; ask the owner again")
 
         # Mark executed BEFORE running so a token can never be used twice.
-        pending.status = "executed"
-        pending.executed_at = utcnow_iso()
-        self.session.add(pending)
-        self.session.commit()
+        if not self._move(action_id, "approved", "executed", executed_at=utcnow_iso()):
+            return blocked("Already executed")  # another request with this token won the race
 
         try:
             result = spec.handler(self.session, validated, action_id=action_id)
@@ -225,6 +232,21 @@ class PolicyEngine:
         return ToolOutcome("ok", pending.tool_name, spec.tier.value, result=result)
 
     # ---- helpers ------------------------------------------------------------
+
+    def _move(self, action_id: str, from_status: str, to_status: str, **fields: str) -> bool:
+        """Change status in ONE conditional UPDATE, so two requests can never both win.
+
+        Reading the status and then writing it would let two simultaneous requests both
+        see "pending" (or "approved") and both proceed. Returns False if another request
+        changed the status first.
+        """
+        result = self.session.exec(
+            update(PendingAction)
+            .where(PendingAction.id == action_id, PendingAction.status == from_status)
+            .values(status=to_status, **fields)
+        )
+        self.session.commit()
+        return result.rowcount == 1
 
     def _get_pending(self, action_id: str) -> PendingAction:
         pending = self.session.get(PendingAction, action_id)

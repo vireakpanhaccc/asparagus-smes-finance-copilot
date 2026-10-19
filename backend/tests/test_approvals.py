@@ -3,7 +3,7 @@
 import json
 
 import pytest
-from sqlmodel import select
+from sqlmodel import Session, select
 
 from app.models import Invoice, PendingAction, SandboxOutbox
 from app.policy.approvals import ApprovalError, issue_token
@@ -122,3 +122,32 @@ def test_unknown_tool_and_bad_input_are_blocked(seeded, clock):
     eng = _engine(seeded, clock)
     assert eng.call("transfer_all_money", {}).status == "blocked"
     assert eng.call("send_payment_reminders", {"invoice_ids": []}).status == "blocked"
+
+
+def test_two_tabs_approving_at_once_run_the_action_once(seeded, clock):
+    eng = _engine(seeded, clock)
+    outcome = _propose(eng, seeded)
+    action_id = outcome.pending_action_id
+    with Session(seeded.get_bind()) as tab_b:
+        # Request B has read the action (still "pending") when request A finishes.
+        seen_by_b = tab_b.get(PendingAction, action_id)
+        token = eng.approve(action_id, outcome.payload_hash)
+        assert eng.execute(action_id, token).status == "ok"
+        assert seen_by_b.status == "pending"  # stale, as in a real race
+        with pytest.raises(ApprovalError):
+            _engine(tab_b, clock).approve(action_id, outcome.payload_hash)
+    assert len(_outbox(seeded)) == 2  # sent once, not twice
+
+
+def test_one_token_used_twice_at_once_runs_once(seeded, clock):
+    eng = _engine(seeded, clock)
+    outcome = _propose(eng, seeded)
+    action_id = outcome.pending_action_id
+    token = eng.approve(action_id, outcome.payload_hash)
+    with Session(seeded.get_bind()) as second:
+        # A second request with the same token has read the action (still "approved").
+        seen_by_second = second.get(PendingAction, action_id)
+        assert eng.execute(action_id, token).status == "ok"
+        assert seen_by_second.status == "approved"  # stale, as in a real race
+        assert _engine(second, clock).execute(action_id, token).status == "blocked"
+    assert len(_outbox(seeded)) == 2

@@ -12,6 +12,7 @@ from app.agent.prompts import build_system_prompt
 from app.config import settings
 from app.policy.engine import PolicyEngine, ToolOutcome
 from app.security import audit
+from app.security.untrusted import unwrap_untrusted
 from app.tools import REGISTRY
 
 _CLAIMS_PENDING = re.compile(r"approval card|(waiting|awaiting|needs?) (for )?your approval", re.I)
@@ -53,6 +54,7 @@ def run_agent(
 
         if not tool_uses:
             text = "\n".join(b["text"] for b in resp.content if b.get("type") == "text")
+            text = unwrap_untrusted(text)  # the owner sees names, never wrapper tags
             result.text = check_claims(session, text, held=bool(result.pending_approvals))
             return result
 
