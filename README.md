@@ -185,17 +185,6 @@ evidence/           exported audit logs, test report, demo video link
 - In Docker the demo CSV upload is missing: the backend image only copies `backend/`, so `samples/cash_transactions.csv` is not found and the seed skips it.
 - "Synced n min ago" on the bank card is mock data (`ConsentGrant.last_sync_at`).
 
-## Submission map
-
-| Checklist item                            | Where                                                                                                                                      |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| 01 Technical documentation                | [docs/technical-document.md](docs/technical-document.md) (architecture, algorithms, security design, testing) |
-| 02 Presentation deck                      | link here                                                                                                                                  |
-| 03 Demo video                             | link in [evidence/README.md](evidence/README.md)                                                                                           |
-| 04 Source code, README, deployment, tests | this repository                                                                                                                            |
-| 05 Security self-assessment               | [docs/security-self-assessment.md](docs/security-self-assessment.md)                                                                       |
-| 06 Execution evidence                     | [evidence/](evidence/)                                                                                                                     |
-
 ## Third-party components
 
 | Component                                       | Licence     |
