@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from pydantic import ValidationError
-from sqlmodel import Session, update
+from sqlmodel import Session, select, update
 
 from app.config import settings
 from app.models import PendingAction
@@ -143,13 +143,23 @@ class PolicyEngine:
                 self._log(actor, tool_name, spec.tier.value, "blocked", str(err))
                 return ToolOutcome("blocked", tool_name, spec.tier.value, reason=str(err))
         p_hash = payload_hash(tool_name, clean_args)
-        pending = PendingAction(
-            tool_name=tool_name, payload_json=json.dumps(clean_args), payload_hash=p_hash
-        )
-        self.session.add(pending)
-        self.session.commit()
+        # The exact same action already waiting (a repeated request, a double-click) is
+        # reused, so the owner never sees two cards for one action.
+        pending = self.session.exec(
+            select(PendingAction).where(PendingAction.payload_hash == p_hash,
+                                        PendingAction.status == "pending")
+        ).first()
+        if pending is None:
+            pending = PendingAction(
+                tool_name=tool_name, payload_json=json.dumps(clean_args), payload_hash=p_hash
+            )
+            self.session.add(pending)
+            self.session.commit()
+            detail = "Held until the owner decides"
+        else:
+            detail = "Same action already waiting for the owner; not duplicated"
         self._log(actor, tool_name, spec.tier.value, "held",
-                  f"Held until the owner decides {_ref(pending.id, p_hash)}")
+                  f"{detail} {_ref(pending.id, p_hash)}")
         return ToolOutcome(
             "needs_approval",
             tool_name,

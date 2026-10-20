@@ -6,7 +6,7 @@ International Track entry, Shenzhen FinTechathon 2026 · Topic E: SME Finance Co
 
 > Sandbox only. All businesses, customers, amounts and lender terms are sample data. The WeBank connection is an **assumed partner integration, simulated in the sandbox**; no real bank is contacted.
 
-![CI](https://github.com/<org>/sme-finance-copilot/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/vireakpanhaccc/asparagus-smes-finance-copilot/actions/workflows/ci.yml/badge.svg)
 
 ## What it does
 
@@ -22,47 +22,107 @@ The owner asks in plain English ("Can I cover rent and payroll in December?"). T
 
 ## Security in one paragraph
 
-Every tool has a permission tier set in code: **read-only**, **suggest** or **needs approval**. A server-side policy engine enforces it, not the prompt. Actions that need approval are stored, shown to the owner, and only run with an **HMAC approval token bound to the exact payload**, which is single-use and expires in 10 minutes. Free text from customers is wrapped as untrusted data and scanned for injection attempts. Personal data is masked in logs. Every step goes into a **hash-chained audit log** that detects tampering. Details: [docs/security-design.md](docs/security-design.md).
+Every tool has a permission tier set in code: **read-only**, **suggest** or **needs approval**. A server-side policy engine enforces it, not the prompt. Actions that need approval are stored, shown to the owner, and only run with an **HMAC approval token bound to the exact payload**, which is single-use and expires in 10 minutes. Free text from customers is wrapped as untrusted data and scanned for injection attempts. Personal data is masked in logs. Every step goes into a **hash-chained audit log** that detects tampering. Details: [docs/technical-document.md](docs/technical-document.md) §6.
 
-## Quick start
+## How to run it
 
-**Docker (recommended)**
+### 1. Prerequisites
+
+- **Python 3.11+** and **Node.js 20+** (or only **Docker**, see step 5)
+- A free **Z.ai API key** for the language model: <https://z.ai/manage-apikey/apikey-list> (the `*-flash` models are free). Without a key the app runs, but the Copilot chat answers "The AI service is busy".
+
+### 2. One-time setup
 
 ```bash
-cp .env.example .env          # add LLM_API_KEY (free Z.ai key), APPROVAL_SECRET and OWNER_DEMO_TOKEN
+git clone https://github.com/vireakpanhaccc/asparagus-smes-finance-copilot.git
+cd asparagus-smes-finance-copilot
+cp .env.example .env
+```
+
+Generate two secrets (run the command twice; each prints a new random value):
+
+```bash
+python3 -c "import secrets; print(secrets.token_hex(32))"
+```
+
+Open `.env` and fill in:
+
+| Variable | Value |
+|---|---|
+| `LLM_API_KEY` | your Z.ai key |
+| `APPROVAL_SECRET` | the first generated value |
+| `OWNER_DEMO_TOKEN` | the second generated value |
+
+The web app needs the same owner token. Create `frontend/.env.local` with one line:
+
+```bash
+echo "NEXT_PUBLIC_OWNER_TOKEN=<the same value as OWNER_DEMO_TOKEN>" > frontend/.env.local
+```
+
+Install the dependencies (macOS has `python3`, not `python`):
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+make setup          # backend (pip) and frontend (npm) packages
+```
+
+### 3. Load the demo data
+
+```bash
+make reseed         # Sample Café: 6 months of bank transactions, a CSV upload, typed entries;
+                    # also clears the audit log
+```
+
+### 4. Start the app (two terminals, venv active in both)
+
+```bash
+make api            # terminal 1: API on http://localhost:8000
+make web            # terminal 2: web app on http://localhost:3000
+```
+
+Open **http://localhost:3000**. The API documentation, where every endpoint can be tried, is at **http://localhost:8000/docs** (paste your `OWNER_DEMO_TOKEN` into the `x-owner-token` field).
+
+### 5. Or run everything with Docker
+
+After step 2 (only `.env` is needed):
+
+```bash
 docker compose up --build
-# UI  http://localhost:3000    API docs  http://localhost:8000/docs
 ```
 
-**Local** (Python 3.11+, Node 20+)
+Then open http://localhost:3000. Docker uses PostgreSQL and loads the demo data on first start.
 
-```bash
-cp .env.example .env              # fill in LLM_API_KEY, APPROVAL_SECRET, OWNER_DEMO_TOKEN
-echo "NEXT_PUBLIC_OWNER_TOKEN=<same value as OWNER_DEMO_TOKEN>" > frontend/.env.local
-python3 -m venv backend/.venv && source backend/.venv/bin/activate   # macOS has no `python`, only `python3`
-make setup        # pip + npm install
-make reseed       # sample data: bank link + 403 bank rows, a sample CSV upload, 3 typed entries (clears the audit log)
-make api          # terminal 1, port 8000
-make web          # terminal 2, port 3000
-```
+## How to test it
 
-Notes for a new machine:
+| What | Command | Expected |
+|---|---|---|
+| Backend tests (no API key or `.env` needed; the agent uses a scripted fake model) | `make test` | `199 passed` |
+| Lint and frontend type-check | `make lint` | no errors |
+| Manual end-to-end cases | see the Execution Evidence Report | 10 task cases and 16 attack cases, all passing |
 
-- **Secrets have no defaults.** The API refuses to start until `APPROVAL_SECRET` (32+ characters) and `OWNER_DEMO_TOKEN` (16+) are set. Generate each with `python3 -c "import secrets; print(secrets.token_hex(32))"`.
+Quick manual check after starting the app: on **Overview**, click **Build a rescue plan**. The Copilot builds the plan and shows two **Needs your OK** cards; nothing is sent until you click **Approve and send**, and every step appears on the **Audit log** page.
 
-- **Keep the frontend on port 3000.** The API's CORS only allows `http://localhost:3000`; on another port every request fails with "Failed to fetch".
-- Keep the venv activated in every terminal that runs `make api`, `make seed` or `make test`.
-- `make seed` keeps existing data; `make reseed` wipes it and the audit log. An empty database sends the owner to `/setup` (first-time setup) instead of Overview.
+## Troubleshooting
+
+| Symptom | Cause and fix |
+|---|---|
+| The API stops with "Refusing to start: … is not set / is a published default" | `APPROVAL_SECRET` or `OWNER_DEMO_TOKEN` is missing, too short (32 / 16 characters) or a default. Generate new values (step 2). |
+| The web app shows "owner authentication required" | `frontend/.env.local` is missing or its token differs from `OWNER_DEMO_TOKEN`. Fix it and restart `make web`. |
+| The chat says "The AI service is busy right now" | No or invalid `LLM_API_KEY`, or the free model is rate-limiting. Wait a minute and retry. |
+| Every request fails with "Failed to fetch" | The web app is not on port 3000 (the API only allows that origin), or the API is not running. |
+| The page loads but new colours or styles are missing | A stale Next.js cache. Stop `make web`, run `rm -rf frontend/.next`, start it again and hard-reload the browser (Cmd + Shift + R). |
+| The app opens the Setup page instead of Overview | The database is empty. Run `make reseed`. |
+
+Notes:
+
+- `make seed` keeps existing data; `make reseed` wipes it and the audit log.
 - Older databases are upgraded automatically when the API or the seed script starts (`app/db.py`, `_migrate`).
-- Stop `next dev` before running `npm run build`: both write `.next/` and the dev server will start returning 500s.
+- Stop `make web` before running `npm run build`; both write `.next/`.
 
-## Tests
+## Key security tests
 
-```bash
-make test
-```
-
-The suite runs without an API key; the agent loop uses a scripted fake model. Key security tests:
+199 tests. The suite runs without an API key or a `.env` (the agent loop uses a scripted fake model, and the tests set their own secrets). Key security tests:
 
 | Test                                                               | Proves                                                        |
 | ------------------------------------------------------------------ | ------------------------------------------------------------- |
@@ -80,6 +140,17 @@ The suite runs without an API key; the agent loop uses a scripted fake model. Ke
 | `test_bank_row_cannot_be_edited` / `…_deleted`                     | Bank rows are locked on the server (403 + audit `blocked`)    |
 | `test_correction_creates_linked_manual_row`                        | A bank mistake is fixed by an offsetting entry, not a rewrite |
 | `test_demo_seed_adds_user_data_without_changing_the_story`         | The demo seed keeps the December shortfall                    |
+| `test_two_tabs_approving_at_once_run_the_action_once`              | One approval runs once, even with simultaneous requests       |
+| `test_default_or_weak_secrets_are_refused`                         | The API will not start with a missing or published secret     |
+| `test_unsafe_reminder_is_refused_before_any_card`                  | Outgoing messages cannot carry links, contacts or accounts    |
+| `test_contact_changed_after_approval_blocks_the_send`              | Recipients are rebuilt and re-checked before sending          |
+| `test_application_that_does_not_fit_is_refused`                    | Loans only for real products and allowed amounts and terms    |
+| `test_model_never_sees_numbers_or_contacts_in_notes`               | Free text is masked before it reaches the model               |
+| `test_disguised_and_chinese_injections_are_detected`               | Fullwidth, invisible-character and Chinese injections caught  |
+| `test_contracted_or_past_tense_claims_are_corrected`               | The reply cannot claim an action that only waits for approval |
+| `test_sandbox_off_fails_closed_and_says_why`                       | Switching sandbox off refuses actions instead of sending      |
+
+The full list of controls and their tests is in [docs/security-self-assessment.md](docs/security-self-assessment.md); the manual test results are summarised in [evidence/README.md](evidence/README.md) and documented in full in the Execution Evidence Report.
 
 ## Repository layout
 
@@ -118,7 +189,7 @@ evidence/           exported audit logs, test report, demo video link
 
 | Checklist item                            | Where                                                                                                                                      |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| 01 Technical documentation                | [docs/architecture.md](docs/architecture.md), [docs/algorithms.md](docs/algorithms.md), [docs/security-design.md](docs/security-design.md) |
+| 01 Technical documentation                | [docs/technical-document.md](docs/technical-document.md) (architecture, algorithms, security design, testing) |
 | 02 Presentation deck                      | link here                                                                                                                                  |
 | 03 Demo video                             | link in [evidence/README.md](evidence/README.md)                                                                                           |
 | 04 Source code, README, deployment, tests | this repository                                                                                                                            |

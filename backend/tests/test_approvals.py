@@ -183,3 +183,13 @@ def test_sandbox_off_fails_closed_and_says_why(seeded, clock, monkeypatch):
     last = seeded.exec(select(AuditEntry).order_by(AuditEntry.id.desc())).first()
     assert last.result == "error" and "Real sending is not implemented" in last.detail
     assert eng.execute(held.pending_action_id, token).status == "blocked"  # cannot retry it
+
+
+def test_same_action_proposed_twice_gives_one_card(seeded, clock):
+    eng = _engine(seeded, clock)
+    first, again = _propose(eng, seeded), _propose(eng, seeded)  # double-click, repeat request
+    assert again.pending_action_id == first.pending_action_id
+    assert len(seeded.exec(select(PendingAction)).all()) == 1
+    other = eng.call("send_payment_reminders",
+                     {"invoice_ids": _invoice_ids(seeded), "message": "A different message"})
+    assert other.pending_action_id != first.pending_action_id  # different content: new card

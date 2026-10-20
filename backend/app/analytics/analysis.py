@@ -10,6 +10,21 @@ from app.analytics.data import load_transactions
 SUPPLIER_CATEGORY = "Supplies"
 
 
+def _in_out(rows: pd.DataFrame) -> tuple[int, int]:
+    money_in = int(rows.loc[rows["amount_cents"] > 0, "amount_cents"].sum())
+    money_out = int(-rows.loc[rows["amount_cents"] < 0, "amount_cents"].sum())
+    return money_in, money_out
+
+
+def _period(money_in: int, money_out: int) -> dict:
+    return {
+        "money_in_cents": money_in,
+        "money_out_cents": money_out,
+        "net_cents": money_in - money_out,
+        "margin_pct": round(100 * (money_in - money_out) / money_in, 1) if money_in else None,
+    }
+
+
 def business_summary(session: Session, account_id: str, today: date | None = None) -> dict:
     today = today or date.today()
     df = load_transactions(session, account_id)
@@ -17,9 +32,12 @@ def business_summary(session: Session, account_id: str, today: date | None = Non
         return {"note": "No transactions yet."}
     df = df[df["category"] != "Opening balance"]
 
-    last30 = df[df["booked_at"] >= pd.Timestamp(today - timedelta(days=30))]
-    money_in = int(last30.loc[last30["amount_cents"] > 0, "amount_cents"].sum())
-    money_out = int(-last30.loc[last30["amount_cents"] < 0, "amount_cents"].sum())
+    cut30 = pd.Timestamp(today - timedelta(days=30))
+    last30 = df[df["booked_at"] >= cut30]
+    money_in, money_out = _in_out(last30)
+    # the 30 days before, so the dashboard can show the change
+    prev30 = df[(df["booked_at"] < cut30) & (df["booked_at"] >= cut30 - pd.Timedelta(days=30))]
+    prev_in, prev_out = _in_out(prev30)
 
     spend_by_cat = (
         (-last30[last30["amount_cents"] < 0].groupby("category")["amount_cents"].sum())
@@ -54,12 +72,8 @@ def business_summary(session: Session, account_id: str, today: date | None = Non
     )
 
     return {
-        "last_30_days": {
-            "money_in_cents": money_in,
-            "money_out_cents": money_out,
-            "net_cents": money_in - money_out,
-            "margin_pct": round(100 * (money_in - money_out) / money_in, 1) if money_in else None,
-        },
+        "last_30_days": _period(money_in, money_out),
+        "previous_30_days": _period(prev_in, prev_out),
         "spend_by_category_cents": spend_by_cat,
         "margin_trend": margin_trend,
         "supplier_cost_change_8w_pct": supplier_change,

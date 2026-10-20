@@ -1,6 +1,6 @@
 """12-week cash-flow forecast (deterministic baseline - the LLM only explains it).
 
-Algorithm (document this in docs/algorithms.md):
+Algorithm (documented in docs/technical-document.md, section 5.1):
   1. Current balance = sum of all transactions.
   2. Recurring outflows: per counterparty with >= 3 payments, the median gap between
      payments classifies it as weekly (6-8 days), bi-weekly (13-16) or monthly (27-32).
@@ -143,5 +143,5 @@ def forecast_weekly(
         ],
         "weeks": result_weeks,
         "shortfall_weeks": [w["week_start"] for w in result_weeks if w["shortfall"]],
-        "note": "Estimate from past transactions, not a guarantee.",
+        "note": "Estimate from past transactions and known bills, not a guarantee.",
     }

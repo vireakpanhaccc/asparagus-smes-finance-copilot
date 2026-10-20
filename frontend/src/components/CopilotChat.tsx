@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import ApprovalCard from "@/components/ApprovalCard";
+import ChatText from "@/components/ChatText";
 import RescuePlanCard from "@/components/RescuePlanCard";
 import TierBadge from "@/components/TierBadge";
 import { RESCUE_PROMPT, useCopilot } from "@/lib/copilot";
@@ -60,13 +61,19 @@ export default function CopilotChat({ greeting, headerAction }: { greeting?: str
 
         {messages.map((m, i) => (
           <div key={i} className="flex flex-col gap-2.5">
-            <div
-              className={`whitespace-pre-wrap ${
-                m.role === "user" ? USER : m.role === "system" ? `${BOT} !bg-brand-red50` : BOT
-              }`}
-            >
-              {m.text}
-            </div>
+            {m.role === "assistant" ? (
+              <div className={BOT}>
+                <ChatText text={m.text} />
+              </div>
+            ) : (
+              <div
+                className={`whitespace-pre-wrap ${
+                  m.role === "user" ? USER : m.role === "notice" ? `${BOT} !bg-brand-blue50` : `${BOT} !bg-brand-red50`
+                }`}
+              >
+                {m.text}
+              </div>
+            )}
             {m.plan && <RescuePlanCard plan={m.plan} />}
             {m.cards?.map((c) => (
               <ApprovalCard key={c.action_id} card={c} onDone={addSystem} />

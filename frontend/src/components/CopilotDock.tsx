@@ -7,10 +7,12 @@ import { useCopilot } from "@/lib/copilot";
 import { useI18n } from "@/lib/i18n";
 
 // The Copilot as a round bot button in the corner. The chat stays hidden until the owner
-// taps it. Desktop (lg+): a floating panel above the button. Below lg: a bottom sheet.
+// taps it. Desktop (lg+): a floating panel above the button, which can be expanded to fill
+// the right side of the screen (never over the sidebar). Below lg: a bottom sheet.
 export default function CopilotDock() {
   const { t } = useI18n();
   const { open, setOpen } = useCopilot();
+  const [expanded, setExpanded] = useState(false);
   const [greeting, setGreeting] = useState<string | undefined>();
   const panel = useRef<HTMLElement>(null);
   const button = useRef<HTMLButtonElement>(null);
@@ -66,8 +68,12 @@ export default function CopilotDock() {
           // mobile: bottom sheet that slides up
           "fixed inset-x-0 bottom-0 z-40 flex h-[85vh] flex-col overflow-hidden rounded-t-[20px] bg-white shadow-2xl",
           // desktop: floating panel that grows out of the bot button
-          "lg:inset-x-auto lg:bottom-24 lg:right-6 lg:h-[min(640px,calc(100vh-8rem))] lg:w-[380px] lg:origin-bottom-right lg:rounded-2xl lg:border-[1.5px] lg:border-brand-ink",
-          "transition-[opacity,transform,visibility] duration-300 ease-out motion-reduce:transition-none",
+          "lg:inset-x-auto lg:bottom-24 lg:right-6 lg:origin-bottom-right lg:rounded-2xl lg:border-[1.5px] lg:border-brand-ink",
+          // expanded: the right side of the screen, full height, clear of the 220px sidebar
+          expanded
+            ? "lg:h-[calc(100vh-7.5rem)] lg:w-[min(48rem,calc(100vw-280px))]"
+            : "lg:h-[min(640px,calc(100vh-8rem))] lg:w-[380px]",
+          "transition-[opacity,transform,visibility,width,height] duration-300 ease-out motion-reduce:transition-none",
           open
             ? "visible translate-y-0 opacity-100 lg:scale-100"
             : "invisible translate-y-full opacity-0 lg:translate-y-3 lg:scale-95",
@@ -80,15 +86,33 @@ export default function CopilotDock() {
           <CopilotChat
             greeting={greeting}
             headerAction={
-              <button
-                aria-label={t("copilot.close")}
-                onClick={() => setOpen(false)}
-                className="grid h-11 w-11 place-items-center rounded-lg border border-brand-line bg-white"
-              >
-                <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                  <path d="M3 3l10 10M13 3L3 13" />
-                </svg>
-              </button>
+              <>
+                {/* Desktop only: on phones the chat is already a tall bottom sheet. */}
+                <button
+                  aria-label={expanded ? "Shrink chat" : "Expand chat"}
+                  title={expanded ? "Shrink chat" : "Expand chat"}
+                  aria-pressed={expanded}
+                  onClick={() => setExpanded(!expanded)}
+                  className="hidden h-11 w-11 place-items-center rounded-lg border border-brand-line bg-white lg:grid"
+                >
+                  <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    {expanded ? (
+                      <path d="M9.5 2.5v4h4M6.5 13.5v-4h-4M9.5 6.5l4-4M6.5 9.5l-4 4" />
+                    ) : (
+                      <path d="M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5l-4 4M2.5 13.5l4-4" />
+                    )}
+                  </svg>
+                </button>
+                <button
+                  aria-label={t("copilot.close")}
+                  onClick={() => setOpen(false)}
+                  className="grid h-11 w-11 place-items-center rounded-lg border border-brand-line bg-white"
+                >
+                  <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                    <path d="M3 3l10 10M13 3L3 13" />
+                  </svg>
+                </button>
+              </>
             }
           />
         </div>

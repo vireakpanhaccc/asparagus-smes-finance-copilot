@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1460" height="1170" viewBox="0 0 1460 1170" font-family="Helvetica, Arial, sans-serif">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5B6478"/></marker><marker id="arrows" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#5B6478"/></marker><marker id="arrowR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#C41E16"/></marker></defs>
+<rect width="1460" height="1170" fill="#FFFFFF"/>
+<rect x="10" y="10" width="1440" height="125" rx="10" fill="#FBFCFE" stroke="#DCE2EC" stroke-width="1.2"/>
+<text x="28" y="36" font-size="13" font-weight="700" letter-spacing="1.2" fill="#5B6478">1 · CLIENT</text>
+<rect x="10" y="150" width="1440" height="105" rx="10" fill="#FBFCFE" stroke="#DCE2EC" stroke-width="1.2"/>
+<text x="28" y="176" font-size="13" font-weight="700" letter-spacing="1.2" fill="#5B6478">2 · API</text>
+<rect x="10" y="270" width="1440" height="130" rx="10" fill="#FBFCFE" stroke="#DCE2EC" stroke-width="1.2"/>
+<text x="28" y="296" font-size="13" font-weight="700" letter-spacing="1.2" fill="#5B6478">3 · AGENT</text>
+<rect x="10" y="415" width="1440" height="135" rx="10" fill="#FBFCFE" stroke="#DCE2EC" stroke-width="1.2"/>
+<text x="28" y="441" font-size="13" font-weight="700" letter-spacing="1.2" fill="#5B6478">4 · POLICY GATE</text>
+<rect x="10" y="565" width="1440" height="200" rx="10" fill="#FBFCFE" stroke="#DCE2EC" stroke-width="1.2"/>
+<text x="28" y="591" font-size="13" font-weight="700" letter-spacing="1.2" fill="#5B6478">5 · TOOLS BY PERMISSION TIER</text>
+<rect x="10" y="780" width="1440" height="330" rx="10" fill="#FBFCFE" stroke="#DCE2EC" stroke-width="1.2"/>
+<text x="28" y="806" font-size="13" font-weight="700" letter-spacing="1.2" fill="#5B6478">6 · SERVICES AND STORAGE</text>
+<rect x="380" y="35" width="520" height="85" rx="8" fill="#FFFFFF" stroke="#1D4F9F" stroke-width="1.6"/>
+<text x="640.0" y="65.0" text-anchor="middle" font-size="19" font-weight="700" fill="#14213D">Web app · Next.js</text>
+<text x="640.0" y="84.0" text-anchor="middle" font-size="15" font-weight="400" fill="#14213D">Overview · Financing · My data · Audit log</text>
+<text x="640.0" y="103.0" text-anchor="middle" font-size="15" font-weight="400" fill="#14213D">Copilot chat on every page</text>
+<path d="M640,120 L640,175" fill="none" stroke="#5B6478" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="652" y="152" text-anchor="start" font-size="14.5" fill="#5B6478" font-style="italic">question · approval · data entry</text>
+<rect x="400" y="175" width="480" height="62" rx="8" fill="#FFFFFF" stroke="#1D4F9F" stroke-width="1.6"/>
+<text x="640.0" y="203.0" text-anchor="middle" font-size="19" font-weight="700" fill="#14213D">REST API · FastAPI</text>
+<text x="640.0" y="222.0" text-anchor="middle" font-size="15" font-weight="400" fill="#14213D">owner token · rate limits · input validation</text>
+<path d="M640,237 L640,292" fill="none" stroke="#5B6478" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="410" y="292" width="460" height="88" rx="8" fill="#FFFFFF" stroke="#1D4F9F" stroke-width="1.6"/>
+<text x="640.0" y="323.5" text-anchor="middle" font-size="19" font-weight="700" fill="#14213D">Agent loop</text>
+<text x="640.0" y="342.5" text-anchor="middle" font-size="15" font-weight="400" fill="#14213D">plans the steps · max 8 tool rounds</text>
+<text x="640.0" y="361.5" text-anchor="middle" font-size="15" font-weight="400" fill="#14213D">checks the reply before it is shown</text>
+<path d="M1075,302 L1075,373 A172.5,12 0 0 0 1420,373 L1420,302" fill="#F5F7FB" stroke="#5B6478" stroke-width="1.6"/>
+<ellipse cx="1247.5" cy="302" rx="172.5" ry="12" fill="#F5F7FB" stroke="#5B6478" stroke-width="1.6"/>
+<text x="1247.5" y="331.0" text-anchor="middle" font-size="19" font-weight="700" fill="#14213D">Language model</text>
+<text x="1247.5" y="350.0" text-anchor="middle" font-size="15" font-weight="400" fill="#14213D">GLM via OpenAI-compatible API</text>
+<text x="1247.5" y="369.0" text-anchor="middle" font-size="15" font-weight="400" fill="#14213D">with fallback models</text>
+<path d="M870,336 L1073,336" fill="none" stroke="#5B6478" stroke-width="2" marker-start="url(#arrows)" marker-end="url(#arrow)"/>
+<text x="972" y="326" text-anchor="middle" font-size="14.5" fill="#5B6478" font-style="italic">tool calls</text>
+<path d="M640,380 L640,445" fill="none" stroke="#5B6478" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="652" y="418" text-anchor="start" font-size="14.5" fill="#5B6478" font-style="italic">every tool call</text>
+<polygon points="430.0,445.0 850.0,445.0 880.0,482 850.0,519.0 430.0,519.0 400.0,482" fill="#EAF0FA" stroke="#1D4F9F" stroke-width="2.6"/>
+<text x="640" y="478" text-anchor="middle" font-size="19" font-weight="700" fill="#14213D">Policy engine</text>
+<text x="640" y="497" text-anchor="middle" font-size="15" font-weight="400" fill="#14213D">allow-list · schema check · permission tier</text>
+<rect x="1075" y="440" width="345" height="85" rx="8" fill="#FFFFFF" stroke="#1D4F9F" stroke-width="1.6"/>
+<text x="1247.5" y="470.0" text-anchor="middle" font-size="19" font-weight="700" fill="#14213D">Security</text>
+<text x="1247.5" y="489.0" text-anchor="middle" font-size="15" font-weight="400" fill="#14213D">masking · injection scan</text>
+<text x="1247.5" y="508.0" text-anchor="middle" font-size="15" font-weight="400" fill="#14213D">hash-chained audit log</text>
+<path d="M880,482 L1073,482" fill="none" stroke="#5B6478" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="977" y="472" text-anchor="middle" font-size="14.5" fill="#5B6478" font-style="italic">logs every decision</text>
+<rect x="190" y="660" width="290" height="90" rx="8" fill="#FFFFFF" stroke="#1D4F9F" stroke-width="1.6"/>
+<text x="335.0" y="692.5" text-anchor="middle" font-size="19" font-weight="700" fill="#14213D">Read-only</text>
+<text x="335.0" y="711.5" text-anchor="middle" font-size="15" font-weight="400" fill="#14213D">forecast · invoices · bills</text>
+<text x="335.0" y="730.5" text-anchor="middle" font-size="15" font-weight="400" fill="#14213D">financing · rescue plan</text>
+<rect x="500" y="660" width="280" height="90" rx="8" fill="#FFFFFF" stroke="#1D4F9F" stroke-width="1.6"/>
+<text x="640.0" y="692.5" text-anchor="middle" font-size="19" font-weight="700" fill="#14213D">Suggest</text>
+<text x="640.0" y="711.5" text-anchor="middle" font-size="15" font-weight="400" fill="#14213D">drafts only</text>
+<text x="640.0" y="730.5" text-anchor="middle" font-size="15" font-weight="400" fill="#14213D">nothing leaves the app</text>
+<rect x="800" y="660" width="290" height="90" rx="8" fill="#FDECEA" stroke="#C41E16" stroke-width="2.2"/>
+<text x="945.0" y="692.5" text-anchor="middle" font-size="19" font-weight="700" fill="#A3170F">Needs approval</text>
+<text x="945.0" y="711.5" text-anchor="middle" font-size="15" font-weight="400" fill="#A3170F">send · submit · pay</text>
+<text x="945.0" y="730.5" text-anchor="middle" font-size="15" font-weight="400" fill="#A3170F">held for the owner</text>
+<path d="M560,519 L560,600 L335,600 L335,658" fill="none" stroke="#5B6478" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M640,519 L640,658" fill="none" stroke="#5B6478" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M720,519 L720,600 L945,600 L945,658" fill="none" stroke="#C41E16" stroke-width="2" stroke-dasharray="7 6" marker-end="url(#arrowR)"/>
+<text x="957" y="622" text-anchor="start" font-size="14.5" fill="#C41E16" font-style="italic">only with the owner's</text>
+<text x="957" y="640" text-anchor="start" font-size="14.5" fill="#C41E16" font-style="italic">payload-bound approval</text>
+<rect x="345" y="825" width="280" height="70" rx="8" fill="#FFFFFF" stroke="#1D4F9F" stroke-width="1.6"/>
+<text x="485.0" y="857.0" text-anchor="middle" font-size="19" font-weight="700" fill="#14213D">Analytics</text>
+<text x="485.0" y="876.0" text-anchor="middle" font-size="15" font-weight="400" fill="#14213D">deterministic numbers</text>
+<path d="M335,750 L335,787 L440,787 L440,823" fill="none" stroke="#5B6478" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M640,750 L640,787 L530,787 L530,823" fill="none" stroke="#5B6478" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M820,832 L820,893 A125.0,12 0 0 0 1070,893 L1070,832" fill="#F5F7FB" stroke="#5B6478" stroke-width="1.6"/>
+<ellipse cx="945.0" cy="832" rx="125.0" ry="12" fill="#F5F7FB" stroke="#5B6478" stroke-width="1.6"/>
+<text x="945.0" y="865.5" text-anchor="middle" font-size="19" font-weight="700" fill="#14213D">Sandbox outbox</text>
+<text x="945.0" y="884.5" text-anchor="middle" font-size="15" font-weight="400" fill="#14213D">nothing is really sent</text>
+<path d="M945,750 L945,818" fill="none" stroke="#C41E16" stroke-width="2" marker-end="url(#arrowR)"/>
+<path d="M345,992 L345,1068 A140.0,12 0 0 0 625,1068 L625,992" fill="#F5F7FB" stroke="#5B6478" stroke-width="1.6"/>
+<ellipse cx="485.0" cy="992" rx="140.0" ry="12" fill="#F5F7FB" stroke="#5B6478" stroke-width="1.6"/>
+<text x="485.0" y="1023.5" text-anchor="middle" font-size="19" font-weight="700" fill="#14213D">Database</text>
+<text x="485.0" y="1042.5" text-anchor="middle" font-size="15" font-weight="400" fill="#14213D">bank · file · typed records</text>
+<text x="485.0" y="1061.5" text-anchor="middle" font-size="15" font-weight="400" fill="#14213D">pending actions · audit log</text>
+<path d="M485,895 L485,978" fill="none" stroke="#5B6478" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="497" y="940" text-anchor="start" font-size="14.5" fill="#5B6478" font-style="italic">reads records</text>
+<rect x="40" y="993" width="245" height="72" rx="8" fill="#FFFFFF" stroke="#1D4F9F" stroke-width="1.6"/>
+<text x="162.5" y="1026.0" text-anchor="middle" font-size="19" font-weight="700" fill="#14213D">Data sources</text>
+<text x="162.5" y="1045.0" text-anchor="middle" font-size="15" font-weight="400" fill="#14213D">bank link · CSV · typed entries</text>
+<path d="M285,1029 L343,1029" fill="none" stroke="#5B6478" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M1247,525 L1247,1030 L627,1030" fill="none" stroke="#5B6478" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="1100" y="1020" text-anchor="middle" font-size="14.5" fill="#5B6478" font-style="italic">audit entries</text>
+<rect x="40" y="1131" width="28" height="18" rx="4" fill="#fff" stroke="#1D4F9F" stroke-width="1.6"/>
+<text x="78" y="1145" font-size="14.5" fill="#5B6478">Component</text>
+<rect x="190" y="1131" width="28" height="18" rx="4" fill="#FDECEA" stroke="#C41E16" stroke-width="2"/>
+<text x="228" y="1145" font-size="14.5" fill="#5B6478">Needs the owner's approval</text>
+<ellipse cx="490" cy="1140" rx="14" ry="9" fill="#F5F7FB" stroke="#5B6478" stroke-width="1.6"/>
+<text x="514" y="1145" font-size="14.5" fill="#5B6478">Storage or external service</text>
+<path d="M770,1140 L798,1140" stroke="#C41E16" stroke-width="2" stroke-dasharray="6 5"/>
+<text x="808" y="1145" font-size="14.5" fill="#5B6478">Conditional path</text>
+</svg>

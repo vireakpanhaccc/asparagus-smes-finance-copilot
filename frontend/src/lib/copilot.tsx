@@ -3,11 +3,11 @@
 // Chat state shared by the docked bot on Overview and the full-screen /copilot page,
 // so the conversation survives moving between pages.
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useRef, useState, type ReactNode } from "react";
 import { apiPost, type ApprovalCard, type ChatResponse, type RescuePlan } from "@/lib/api";
 
 export type Msg = {
-  role: "user" | "assistant" | "system";
+  role: "user" | "assistant" | "system" | "notice"; // system = an error; notice = a status note
   text: string;
   cards?: ApprovalCard[];
   plan?: RescuePlan | null;
@@ -36,8 +36,13 @@ export function CopilotProvider({ children }: { children: ReactNode }) {
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
 
+  // A ref, not just state: two clicks in the same render both see busy === false, and a
+  // second request would make the Copilot propose the same actions twice.
+  const sending = useRef(false);
+
   async function send(text: string) {
-    if (!text.trim() || busy) return;
+    if (!text.trim() || sending.current) return;
+    sending.current = true;
     setOpen(true);
     setMessages((m) => [...m, { role: "user", text }]);
     setBusy(true);
@@ -55,11 +60,12 @@ export function CopilotProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       setMessages((m) => [...m, { role: "system", text: `Error: ${(e as Error).message}` }]);
     } finally {
+      sending.current = false;
       setBusy(false);
     }
   }
 
-  const addSystem = (text: string) => setMessages((m) => [...m, { role: "system", text }]);
+  const addSystem = (text: string) => setMessages((m) => [...m, { role: "notice", text }]);
 
   return (
     <CopilotContext.Provider value={{ messages, trace, busy, open, setOpen, send, addSystem }}>

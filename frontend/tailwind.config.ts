@@ -17,6 +17,7 @@ const config: Config = {
           red800: "#A3170F", // text on red-50
           red50: "#FDECEA", // alert / blocked backgrounds
           red200: "#F6C3BF", // alert borders
+          green700: "#1E7B34", // a change for the better on KPI cards (passes contrast)
           amber: "#8A5A00", // "Needs your OK", held, overdue (text)
           amber50: "#FFF4DD", // same, background
           ink: "#14213D", // body text

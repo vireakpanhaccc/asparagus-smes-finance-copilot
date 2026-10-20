@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import CopilotDock from "@/components/CopilotDock";
 import Sidebar from "@/components/Sidebar";
+import Logo from "@/components/Logo";
 
 // Desktop: fixed 220px sidebar. Below lg: top bar with a hamburger and a slide-in drawer.
 export default function AppShell({ children }: { children: ReactNode }) {
@@ -48,7 +49,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <path d="M3 5h14M3 10h14M3 15h14" />
             </svg>
           </button>
-          <span className="font-bold">SME Finance Copilot</span>
+          <Logo className="w-[120px]" />
         </header>
         <main className="min-w-0 flex-1">{children}</main>
         {pathname !== "/copilot" && <CopilotDock />}

@@ -146,7 +146,7 @@ def build(
                 due_on=today - timedelta(days=5), paid=True),
     ]
     bills = [
-        Bill(account_id=acc, payee="Kitchen equipment repair", amount_cents=210_000,
+        Bill(account_id=acc, payee="Kitchen equipment repair", amount_cents=260_000,
              due_on=today + timedelta(days=46), category="Equipment"),
         Bill(account_id=acc, payee="Annual shop insurance", amount_cents=150_000,
              due_on=today + timedelta(days=49), category="Insurance"),

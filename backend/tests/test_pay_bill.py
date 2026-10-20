@@ -23,7 +23,7 @@ def test_payment_details_come_from_the_bill_not_the_model(seeded, clock):
     outcome = _engine(seeded, clock).call("pay_bill", {"bill_id": bill.id})
     assert outcome.status == "needs_approval"
     assert outcome.payload == {"bill_id": bill.id, "payee": "Kitchen equipment repair",
-                               "amount_cents": 210_000, "amount": "$2,100.00",
+                               "amount_cents": 260_000, "amount": "$2,600.00",
                                "due_on": bill.due_on.isoformat()}
     assert seeded.exec(select(SandboxOutbox)).all() == []
 
@@ -59,7 +59,7 @@ def test_approved_payment_runs_once_in_sandbox(seeded, clock):
     [payment] = seeded.exec(sandbox_payments).all()
     # the payment is stored like a bank record: locked, written by the system
     assert payment.source == "bank" and payment.created_by == "system"
-    assert payment.amount_cents == -210_000
+    assert payment.amount_cents == -260_000
     assert [o.kind for o in seeded.exec(select(SandboxOutbox)).all()] == ["bill_payment"]
     assert eng.execute(outcome.pending_action_id, token).status == "blocked"  # single use
 
@@ -70,7 +70,7 @@ def test_bill_changed_after_approval_is_blocked(seeded, clock):
     outcome = eng.call("pay_bill", {"bill_id": bill.id})
     token = eng.approve(outcome.pending_action_id, outcome.payload_hash)
 
-    bill.amount_cents = 500_000  # someone edits the bill after the owner approved $2,100
+    bill.amount_cents = 500_000  # someone edits the bill after the owner approved $2,600
     seeded.add(bill)
     seeded.commit()
 

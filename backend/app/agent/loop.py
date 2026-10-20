@@ -16,8 +16,12 @@ from app.security.untrusted import unwrap_untrusted
 from app.tools import REGISTRY
 
 _CLAIMS_PENDING = re.compile(r"approval card|(waiting|awaiting|needs?) (for )?your approval", re.I)
+# "has been sent", "were paid", and also contractions and plain past tense the model
+# uses: "I've submitted", "it's been sent", "I submitted", "I just paid".
 _CLAIMS_DONE = re.compile(
-    r"\b(has|have|was|were) (been )?(sent|submitted|paid|transferred)\b", re.I
+    r"(\b(has|have|had|was|were)|['’](ve|s))\s+(been\s+)?(sent|submitted|paid|transferred)\b"
+    r"|\b(I|we)\s+(just\s+|already\s+)?(sent|submitted|paid|transferred)\b",
+    re.I,
 )
 _NEGATION = re.compile(r"\b(not|no|nothing|never)\b|n't", re.I)
 NOTE_NOTHING_HELD = (

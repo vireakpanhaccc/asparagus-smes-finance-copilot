@@ -33,3 +33,5 @@ evidence/*.mov
 # others
 ENTRY.md
 international-topics-rules-en.docx
+# Office lock files
+~$*

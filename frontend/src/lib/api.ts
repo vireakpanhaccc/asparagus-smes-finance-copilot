@@ -95,13 +95,16 @@ export type Forecast = {
   note: string;
 };
 
+export type Period = {
+  money_in_cents: number;
+  money_out_cents: number;
+  net_cents: number;
+  margin_pct: number | null;
+};
+
 export type Analysis = {
-  last_30_days: {
-    money_in_cents: number;
-    money_out_cents: number;
-    net_cents: number;
-    margin_pct: number | null;
-  };
+  last_30_days: Period;
+  previous_30_days: Period; // the 30 days before, for the change shown on each card
   spend_by_category_cents: Record<string, number>;
   margin_trend: { month: string; net_cents: number; margin_pct: number | null }[];
   supplier_cost_change_8w_pct: number | null;

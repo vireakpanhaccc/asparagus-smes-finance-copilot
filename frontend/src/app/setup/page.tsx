@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import EntryPanel, { type PanelMode } from "@/components/data/EntryPanel";
 import { apiDownload, apiGet, apiPost, apiUpload, type DataSources } from "@/lib/api";
+import Logo from "@/components/Logo";
 
 // Assumed partner integration, simulated in the sandbox. No real bank is contacted.
 const PROVIDERS = ["WeBank (mock)", "Cambodian bank / KHQR (mock)", "Mobile wallet (mock)"];
@@ -22,12 +23,7 @@ export default function SetupPage() {
   return (
     <div className="min-h-screen bg-brand-panel">
       <header className="flex items-center justify-between px-5 py-4 lg:px-10">
-        <div className="flex items-center gap-2.5">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-blue" aria-hidden="true">
-            <span className="h-2.5 w-2.5 rounded-full bg-brand-red" />
-          </span>
-          <span className="text-[15px] font-bold">SME Finance Copilot</span>
-        </div>
+        <Logo className="w-[150px] lg:w-[170px]" />
         <Link href="/overview" className="min-h-[44px] content-center text-sm font-semibold">
           Finish later
         </Link>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
+import Logo from "@/components/Logo";
 
 const ITEMS = [
   { href: "/overview", key: "nav.overview" },
@@ -17,11 +18,8 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <nav aria-label="Main" className="flex h-full flex-col gap-1.5 p-4">
-      <div className="mb-5 flex items-center gap-2.5">
-        <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-blue" aria-hidden="true">
-          <span className="h-2.5 w-2.5 rounded-full bg-brand-red" />
-        </span>
-        <span className="text-[15px] font-bold leading-tight">SME Finance Copilot</span>
+      <div className="mb-5 px-1">
+        <Logo className="w-full max-w-[180px]" />
       </div>
       {ITEMS.map((item) => {
         const active = pathname === item.href;

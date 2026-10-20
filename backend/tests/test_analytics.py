@@ -59,3 +59,12 @@ def test_loan_payments_repay_principal_not_just_interest(seeded):
         months = 2 if pid == "lender-a-line" else 12
         assert o["monthly_payment_cents"] * months >= o["amount_cents"]
         assert o["total_cost_cents"] == o["monthly_payment_cents"] * months - o["amount_cents"]
+
+
+def test_summary_compares_with_the_previous_30_days(seeded):
+    s = analysis.business_summary(seeded, ACC, today=TODAY)
+    now, before = s["last_30_days"], s["previous_30_days"]
+    for period in (now, before):
+        assert period["money_in_cents"] > 0 and period["money_out_cents"] > 0
+        assert period["net_cents"] == period["money_in_cents"] - period["money_out_cents"]
+    assert now != before  # two different windows of the same history
