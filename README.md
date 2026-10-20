@@ -209,10 +209,4 @@ evidence/           exported audit logs, test report, demo video link
 
 Model: GLM-4.5-Flash / GLM-4.7-Flash (Zhipu AI) via the Z.ai API free tier, used under Z.ai's terms. Lender names in the app are placeholders.
 
-## Team
-
-| Name | Role | University |
-| ---- | ---- | ---------- |
-|      |      |            |
-
 Licence: MIT
